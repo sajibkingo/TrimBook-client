@@ -65,8 +65,8 @@ export default function Navbar() {
     };
 
     const navLinkClass = (path) =>
-        `text-sm font-medium transition-colors ${pathname === path
-            ? "text-zinc-950 font-semibold underline underline-offset-8 decoration-amber-600 decoration-2"
+        `relative py-1 text-sm font-medium transition-colors ${pathname === path
+            ? "text-zinc-950 font-semibold after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-amber-500 after:to-rose-500"
             : "text-zinc-600 hover:text-zinc-950"
         }`;
 
@@ -81,17 +81,19 @@ export default function Navbar() {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-zinc-200/80">
+        <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-amber-200/50 shadow-[0_2px_20px_-6px_rgba(245,158,11,0.12)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     <Link
                         href="/"
-                        className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-zinc-900"
+                        className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-zinc-900 group"
                     >
-                        <span className="p-2 rounded-xl bg-zinc-900 text-amber-400 shadow-xs">
+                        <span className="p-2 rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-amber-950 text-amber-400 shadow-sm ring-1 ring-amber-400/30 group-hover:scale-105 transition-transform">
                             <Scissors className="w-5 h-5" />
                         </span>
-                        <span>TrimBook</span>
+                        <span className="bg-gradient-to-r from-zinc-950 via-zinc-800 to-amber-800 bg-clip-text text-transparent">
+                            TrimBook
+                        </span>
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-8">
@@ -113,10 +115,10 @@ export default function Navbar() {
                             <div className="h-9 w-28 rounded-full bg-zinc-100 animate-pulse" />
                         ) : user ? (
                             <DropdownMenu>
-                                <DropdownMenuTrigger className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full border border-zinc-200 bg-zinc-50/70 hover:bg-zinc-100 transition cursor-pointer focus:outline-none">
-                                    <Avatar className="h-8 w-8 border border-zinc-200">
+                                <DropdownMenuTrigger className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full border border-amber-200/80 bg-gradient-to-r from-amber-50/70 to-rose-50/50 hover:from-amber-100/70 hover:to-rose-100/50 transition cursor-pointer focus:outline-none">
+                                    <Avatar className="h-8 w-8 ring-2 ring-amber-400/50">
                                         <AvatarImage src={user.image || ""} alt={user.name} />
-                                        <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
+                                        <AvatarFallback className="bg-gradient-to-br from-zinc-900 to-amber-900 text-amber-300 text-xs font-semibold">
                                             {getInitials(user.name)}
                                         </AvatarFallback>
                                     </Avatar>
@@ -126,7 +128,7 @@ export default function Navbar() {
                                     <ChevronDown className="w-4 h-4 text-zinc-500" />
                                 </DropdownMenuTrigger>
 
-                                <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 z-50">
+                                <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 z-50 border-amber-100 shadow-lg">
                                     <DropdownMenuGroup>
                                         <DropdownMenuLabel className="font-normal">
                                             <div className="flex flex-col space-y-1">
@@ -136,7 +138,7 @@ export default function Navbar() {
                                                 <p className="text-xs text-zinc-500 truncate">
                                                     {user.email}
                                                 </p>
-                                                <span className="inline-block w-fit mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800">
+                                                <span className="inline-block w-fit mt-1 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-gradient-to-r from-amber-100 to-rose-100 text-amber-900">
                                                     {user.role || "customer"}
                                                 </span>
                                             </div>
@@ -148,17 +150,17 @@ export default function Navbar() {
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem
                                             onClick={() => router.push("/dashboard")}
-                                            className="cursor-pointer rounded-lg flex items-center gap-2"
+                                            className="cursor-pointer rounded-xl flex items-center gap-2"
                                         >
-                                            <LayoutDashboard className="w-4 h-4 text-zinc-600" />
+                                            <LayoutDashboard className="w-4 h-4 text-amber-700" />
                                             <span>Dashboard</span>
                                         </DropdownMenuItem>
 
                                         <DropdownMenuItem
                                             onClick={() => router.push("/dashboard/profile")}
-                                            className="cursor-pointer rounded-lg flex items-center gap-2"
+                                            className="cursor-pointer rounded-xl flex items-center gap-2"
                                         >
-                                            <User className="w-4 h-4 text-zinc-600" />
+                                            <User className="w-4 h-4 text-amber-700" />
                                             <span>My Profile</span>
                                         </DropdownMenuItem>
                                     </DropdownMenuGroup>
@@ -168,7 +170,7 @@ export default function Navbar() {
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem
                                             onClick={handleLogout}
-                                            className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center gap-2"
+                                            className="cursor-pointer rounded-xl text-rose-600 focus:text-rose-700 focus:bg-rose-50 flex items-center gap-2"
                                         >
                                             <LogOut className="w-4 h-4" />
                                             <span>Logout</span>
@@ -182,7 +184,7 @@ export default function Navbar() {
                                     href="/sign-in"
                                     className={cn(
                                         buttonVariants({ variant: "ghost" }),
-                                        "text-zinc-700 hover:text-zinc-950 font-medium"
+                                        "text-zinc-700 hover:text-zinc-950 font-medium rounded-full"
                                     )}
                                 >
                                     Sign In
@@ -191,7 +193,7 @@ export default function Navbar() {
                                     href="/sign-up"
                                     className={cn(
                                         buttonVariants(),
-                                        "bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-5 font-medium"
+                                        "btn-luxury-gradient text-white rounded-full px-6 font-semibold shadow-sm border-0"
                                     )}
                                 >
                                     Sign Up
@@ -203,7 +205,7 @@ export default function Navbar() {
                     <button
                         type="button"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg text-zinc-700 hover:bg-zinc-100 transition"
+                        className="md:hidden p-2 rounded-lg text-zinc-700 hover:bg-amber-50 transition"
                         aria-label="Toggle Menu"
                     >
                         {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -212,19 +214,19 @@ export default function Navbar() {
             </div>
 
             {mobileMenuOpen && (
-                <div className="md:hidden bg-white border-b border-zinc-200 px-4 pt-3 pb-5 space-y-3">
+                <div className="md:hidden bg-white/95 backdrop-blur-xl border-b border-amber-200/60 px-4 pt-3 pb-5 space-y-3">
                     <div className="flex flex-col space-y-2">
                         <Link
                             href="/"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                            className="px-3 py-2 rounded-xl text-sm font-medium text-zinc-800 hover:bg-amber-50"
                         >
                             Home
                         </Link>
                         <Link
                             href="/services"
                             onClick={() => setMobileMenuOpen(false)}
-                            className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                            className="px-3 py-2 rounded-xl text-sm font-medium text-zinc-800 hover:bg-amber-50"
                         >
                             Browse Services
                         </Link>
@@ -233,14 +235,14 @@ export default function Navbar() {
                                 <Link
                                     href="/dashboard"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                                    className="px-3 py-2 rounded-xl text-sm font-medium text-zinc-800 hover:bg-amber-50"
                                 >
                                     Dashboard
                                 </Link>
                                 <Link
                                     href="/dashboard/profile"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                                    className="px-3 py-2 rounded-xl text-sm font-medium text-zinc-800 hover:bg-amber-50"
                                 >
                                     My Profile
                                 </Link>
@@ -250,11 +252,11 @@ export default function Navbar() {
 
                     <div className="pt-3 border-t border-zinc-100">
                         {showLoading ? (
-                            <div className="h-10 w-full rounded-lg bg-zinc-100 animate-pulse" />
+                            <div className="h-10 w-full rounded-xl bg-zinc-100 animate-pulse" />
                         ) : user ? (
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 px-3">
-                                    <Avatar className="h-9 w-9 border border-zinc-200">
+                                    <Avatar className="h-9 w-9 ring-2 ring-amber-400/50">
                                         <AvatarImage src={user.image || ""} alt={user.name} />
                                         <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
                                             {getInitials(user.name)}
@@ -288,7 +290,7 @@ export default function Navbar() {
                                     onClick={() => setMobileMenuOpen(false)}
                                     className={cn(
                                         buttonVariants(),
-                                        "w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl"
+                                        "w-full btn-luxury-gradient text-white rounded-xl border-0"
                                     )}
                                 >
                                     Sign Up

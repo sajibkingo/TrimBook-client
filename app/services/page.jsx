@@ -2,61 +2,96 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { apiRequest } from "@/lib/api";
 import ServiceCard from "@/components/ServiceCard";
 import Loader from "@/components/Loader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Search, SlidersHorizontal, RotateCcw, Sparkles } from "lucide-react";
+    Search,
+    SlidersHorizontal,
+    ArrowUpDown,
+    RotateCcw,
+    Scissors,
+} from "lucide-react";
 
-const CATEGORIES = [
-    "All",
-    "Haircut & Styling",
-    "Hair Coloring",
-    "Hair Treatment",
-    "Facial & Skincare",
-    "Makeup",
-    "Manicure & Pedicure",
-    "Spa & Massage",
-];
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 function BrowseServicesContent({ initialCategory }) {
     const [services, setServices] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [allCategories, setAllCategories] = useState(["All"]);
+    const [loadedQueryKey, setLoadedQueryKey] = useState("");
+
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState(
-        CATEGORIES.includes(initialCategory) ? initialCategory : "All"
-    );
+    const [selectedCategory, setSelectedCategory] = useState(initialCategory);
     const [sortOrder, setSortOrder] = useState("default");
 
+    const currentQueryKey = `${searchTerm.trim()}|${selectedCategory}|${sortOrder}`;
+    const isLoading = loadedQueryKey !== currentQueryKey;
+
     useEffect(() => {
+        let isMounted = true;
+
+        async function fetchCategories() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/services`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (isMounted && Array.isArray(data)) {
+                    const uniqueCats = Array.from(
+                        new Set(data.map((item) => item.category).filter(Boolean))
+                    );
+                    setAllCategories(["All", ...uniqueCats]);
+                }
+            } catch (err) {
+                // Ignore category fetch error
+            }
+        }
+
+        fetchCategories();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+
         const timer = setTimeout(async () => {
-            setLoading(true);
             try {
                 const params = new URLSearchParams();
                 if (searchTerm.trim()) params.set("search", searchTerm.trim());
-                if (selectedCategory !== "All") params.set("category", selectedCategory);
-                if (sortOrder !== "default") params.set("sort", sortOrder);
+                if (selectedCategory && selectedCategory !== "All") {
+                    params.set("category", selectedCategory);
+                }
+                if (sortOrder && sortOrder !== "default") {
+                    params.set("sort", sortOrder);
+                }
 
                 const queryString = params.toString();
-                const endpoint = queryString ? `/api/services?${queryString}` : "/api/services";
-                const data = await apiRequest(endpoint);
-                setServices(data);
+                const url = `${API_BASE_URL}/api/services${queryString ? `?${queryString}` : ""
+                    }`;
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Failed to fetch services");
+                const data = await res.json();
+
+                if (isMounted && Array.isArray(data)) {
+                    setServices(data);
+                }
             } catch (error) {
-                console.error("Failed to fetch services:", error);
+                if (isMounted) setServices([]);
             } finally {
-                setLoading(false);
+                if (isMounted) {
+                    setLoadedQueryKey(`${searchTerm.trim()}|${selectedCategory}|${sortOrder}`);
+                }
             }
         }, 250);
 
-        return () => clearTimeout(timer);
+        return () => {
+            isMounted = false;
+            clearTimeout(timer);
+        };
     }, [searchTerm, selectedCategory, sortOrder]);
 
     const handleResetFilters = () => {
@@ -65,158 +100,162 @@ function BrowseServicesContent({ initialCategory }) {
         setSortOrder("default");
     };
 
-    const hasActiveFilters =
-        searchTerm.trim() !== "" || selectedCategory !== "All" || sortOrder !== "default";
-
     return (
-        <div className="min-h-screen bg-[#FAF9F6]">
-            <section className="bg-zinc-950 text-white py-14 sm:py-16 border-b border-zinc-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-2xl space-y-3">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-semibold uppercase tracking-wider">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Full Treatment Menu</span>
-                        </div>
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                            Browse Salon Services
-                        </h1>
-                        <p className="text-sm sm:text-base text-zinc-400">
-                            Explore our curated hair, beauty, skincare, and spa experiences. Filter by specialty or sort by price to find your ideal treatment.
-                        </p>
-                    </div>
+        <div className="min-h-screen bg-[#FAF9F6] text-zinc-900">
+            <section className="bg-[#18181B] text-white py-14 sm:py-16 border-b border-zinc-800">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+                        Treatment Menu
+                    </span>
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+                        Explore Our Salon Services
+                    </h1>
+                    <p className="text-sm sm:text-base text-zinc-400 max-w-2xl">
+                        Search treatments by name, filter by salon specialty, or sort by
+                        price to find the ideal session for your schedule.
+                    </p>
                 </div>
             </section>
 
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-7">
-                <div className="bg-white rounded-2xl border border-zinc-200/90 shadow-sm p-4 sm:p-5 space-y-4">
-                    <div className="flex flex-col md:flex-row gap-3">
-                        <div className="relative flex-1">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div className="bg-white p-4 sm:p-6 rounded-3xl border border-zinc-200/80 shadow-xs space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                        <div className="md:col-span-6 relative">
                             <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                             <Input
                                 type="text"
-                                placeholder="Search services by name (e.g., Balayage, Keratin, Facial)..."
+                                placeholder="Search salon service by name..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 h-11 rounded-xl border-zinc-200 bg-zinc-50/60 focus:bg-white"
                             />
                         </div>
 
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-full sm:w-56">
-                                <Select value={sortOrder} onValueChange={setSortOrder}>
-                                    <SelectTrigger className="h-11 rounded-xl border-zinc-200 bg-zinc-50/60">
-                                        <div className="flex items-center gap-2">
-                                            <SlidersHorizontal className="w-4 h-4 text-zinc-500" />
-                                            <SelectValue placeholder="Sort by Price" />
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="default">Newest First</SelectItem>
-                                        <SelectItem value="price_asc">Price: Low to High</SelectItem>
-                                        <SelectItem value="price_desc">Price: High to Low</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="md:col-span-3 relative">
+                            <SlidersHorizontal className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                aria-label="Filter by Category"
+                                className="w-full h-11 pl-10 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/60 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                            >
+                                {allCategories.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat === "All" ? "All Categories" : cat}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                            {hasActiveFilters && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={handleResetFilters}
-                                    className="h-11 rounded-xl border-zinc-200 text-zinc-700 hover:bg-zinc-100 shrink-0"
-                                >
-                                    <RotateCcw className="w-4 h-4 mr-1.5" />
-                                    Reset
-                                </Button>
-                            )}
+                        <div className="md:col-span-3 relative">
+                            <ArrowUpDown className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                aria-label="Sort by Price"
+                                className="w-full h-11 pl-10 pr-4 rounded-xl border border-zinc-200 bg-zinc-50/60 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                            >
+                                <option value="default">Sort: Latest Featured</option>
+                                <option value="price_asc">Price: Low to High</option>
+                                <option value="price_desc">Price: High to Low</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                        {CATEGORIES.map((category) => {
-                            const active = selectedCategory === category;
-                            return (
-                                <button
-                                    key={category}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-zinc-100">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {allCategories.map((cat) => {
+                                const active = selectedCategory === cat;
+                                return (
+                                    <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => setSelectedCategory(cat)}
+                                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${active
+                                                ? "bg-zinc-900 text-amber-400 font-semibold"
+                                                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70"
+                                            }`}
+                                    >
+                                        {cat}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {(searchTerm ||
+                            selectedCategory !== "All" ||
+                            sortOrder !== "default") && (
+                                <Button
                                     type="button"
-                                    onClick={() => setSelectedCategory(category)}
-                                    className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${active
-                                            ? "bg-zinc-900 text-amber-400 shadow-xs"
-                                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/80 hover:text-zinc-900"
-                                        }`}
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleResetFilters}
+                                    className="text-xs text-zinc-500 hover:text-zinc-900 cursor-pointer"
                                 >
-                                    {category}
-                                </button>
-                            );
-                        })}
+                                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                                    Reset Filters
+                                </Button>
+                            )}
                     </div>
                 </div>
-            </section>
 
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-20">
-                <div className="flex items-center justify-between mb-6">
-                    <p className="text-sm text-zinc-500">
-                        Showing{" "}
-                        <span className="font-semibold text-zinc-900">{services.length}</span>{" "}
-                        {services.length === 1 ? "service" : "services"}
-                        {selectedCategory !== "All" && (
-                            <>
-                                {" "}
-                                in <span className="font-semibold text-amber-700">{selectedCategory}</span>
-                            </>
-                        )}
-                    </p>
-                </div>
-
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[...Array(6)].map((_, idx) => (
-                            <div
-                                key={idx}
-                                className="h-96 rounded-2xl bg-white border border-zinc-200/70 animate-pulse"
-                            />
-                        ))}
-                    </div>
-                ) : services.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {services.map((service) => (
-                            <ServiceCard key={service._id} service={service} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 bg-white rounded-2xl border border-zinc-200/80 space-y-3">
-                        <p className="text-lg font-semibold text-zinc-800">
-                            No matching salon services found
-                        </p>
+                {isLoading ? (
+                    <Loader text="Fetching salon services..." />
+                ) : services.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-zinc-200/80 p-14 text-center space-y-3">
+                        <Scissors className="w-8 h-8 text-amber-600 mx-auto" />
+                        <h2 className="text-xl font-bold text-zinc-900">
+                            No Matching Services Found
+                        </h2>
                         <p className="text-sm text-zinc-500 max-w-md mx-auto">
-                            Try adjusting your search keywords or clearing the category filter to see all available treatments.
+                            Try adjusting your search keywords, category filter, or price sort
+                            options.
                         </p>
-                        {hasActiveFilters && (
+                        <div className="pt-2">
                             <Button
                                 type="button"
                                 onClick={handleResetFilters}
-                                className="mt-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6"
+                                className="rounded-full bg-zinc-900 hover:bg-zinc-800 text-white px-6 cursor-pointer"
                             >
                                 Clear All Filters
                             </Button>
-                        )}
+                        </div>
                     </div>
+                ) : (
+                    <>
+                        <p className="text-xs font-medium text-zinc-500">
+                            Showing{" "}
+                            <span className="font-bold text-zinc-900">{services.length}</span>{" "}
+                            {services.length === 1 ? "service" : "services"}
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {services.map((service) => (
+                                <ServiceCard key={service._id} service={service} />
+                            ))}
+                        </div>
+                    </>
                 )}
             </section>
         </div>
     );
 }
 
-function SearchParamsWrapper() {
+function ServicesWithParams() {
     const searchParams = useSearchParams();
-    const category = searchParams.get("category") || "All";
-    return <BrowseServicesContent key={category} initialCategory={category} />;
+    const categoryFromUrl = searchParams.get("category") || "All";
+
+    return (
+        <BrowseServicesContent
+            key={categoryFromUrl}
+            initialCategory={categoryFromUrl}
+        />
+    );
 }
 
 export default function BrowseServicesPage() {
     return (
         <Suspense fallback={<Loader text="Loading salon services..." />}>
-            <SearchParamsWrapper />
+            <ServicesWithParams />
         </Suspense>
     );
 }

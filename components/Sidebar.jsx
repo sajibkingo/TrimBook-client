@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSession, signOut } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -41,18 +41,19 @@ function SidebarContent({
     onLogout,
 }) {
     return (
-        <div className="flex flex-col h-full bg-[#18181B] text-zinc-100 w-64 select-none">
-            {/* Brand Header */}
-            <div className="h-16 px-6 flex items-center justify-between border-b border-zinc-800/90">
+        <div className="flex flex-col h-full bg-gradient-to-b from-[#09090B] via-[#18181B] to-[#1E1416] text-zinc-100 w-64 select-none border-r border-zinc-800/80">
+            <div className="h-16 px-6 flex items-center justify-between border-b border-zinc-800/80">
                 <Link
                     href="/"
                     onClick={onNavigate}
-                    className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white"
+                    className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white group"
                 >
-                    <span className="p-1.5 rounded-xl bg-amber-500/15 text-amber-400">
+                    <span className="p-1.5 rounded-xl bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-rose-500/25 border border-amber-400/30 text-amber-400 group-hover:scale-105 transition-transform">
                         <Scissors className="w-5 h-5" />
                     </span>
-                    <span>TrimBook</span>
+                    <span className="bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+                        TrimBook
+                    </span>
                 </Link>
 
                 <button
@@ -65,12 +66,11 @@ function SidebarContent({
                 </button>
             </div>
 
-            {/* User Summary Card */}
             <div className="p-4">
-                <div className="p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-amber-500/40">
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900/80 to-amber-950/30 border border-amber-500/20 flex items-center gap-3 shadow-xs">
+                    <Avatar className="h-10 w-10 ring-2 ring-amber-400/40">
                         <AvatarImage src={user?.image || ""} alt={user?.name} />
-                        <AvatarFallback className="bg-zinc-800 text-amber-400 text-xs font-bold">
+                        <AvatarFallback className="bg-gradient-to-br from-zinc-800 to-amber-950 text-amber-300 text-xs font-bold">
                             {getInitials(user?.name)}
                         </AvatarFallback>
                     </Avatar>
@@ -78,15 +78,14 @@ function SidebarContent({
                         <p className="text-sm font-semibold text-white truncate">
                             {user?.name || "Member"}
                         </p>
-                        <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-400/25 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
                             {isAdmin ? "Admin Panel" : "Customer"}
                         </span>
                     </div>
                 </div>
             </div>
 
-            {/* Role-Based Navigation Links */}
-            <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-2 space-y-1.5 overflow-y-auto">
                 {navLinks.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
@@ -97,12 +96,12 @@ function SidebarContent({
                             href={item.href}
                             onClick={onNavigate}
                             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
-                                ? "bg-amber-500 text-zinc-950 font-semibold shadow-xs"
-                                : "text-zinc-400 hover:text-white hover:bg-zinc-800/70"
+                                    ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold shadow-md shadow-amber-500/20"
+                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
                                 }`}
                         >
                             <Icon
-                                className={`w-4 h-4 shrink-0 ${isActive ? "text-zinc-950" : "text-zinc-400"
+                                className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-zinc-400"
                                     }`}
                             />
                             <span>{item.label}</span>
@@ -111,12 +110,11 @@ function SidebarContent({
                 })}
             </nav>
 
-            {/* Bottom Actions */}
-            <div className="p-3 border-t border-zinc-800/90 space-y-1">
+            <div className="p-3 border-t border-zinc-800/80 space-y-1">
                 <Link
                     href="/"
                     onClick={onNavigate}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/70 transition"
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition"
                 >
                     <Home className="w-4 h-4" />
                     <span>Back to Home</span>
@@ -137,7 +135,6 @@ function SidebarContent({
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const router = useRouter();
     const { data: session } = useSession();
     const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -208,6 +205,7 @@ export default function Sidebar() {
                 fetchOptions: {
                     onSuccess: () => {
                         toast.success("Logged out successfully");
+                        setMobileOpen(false);
                         window.location.href = "/sign-in";
                     },
                 },
@@ -219,8 +217,7 @@ export default function Sidebar() {
 
     return (
         <>
-            {/* Mobile Top Header Bar */}
-            <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 bg-[#18181B] text-white border-b border-zinc-800">
+            <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 bg-gradient-to-r from-[#09090B] via-[#18181B] to-[#1E1416] text-white border-b border-zinc-800">
                 <Link href="/" className="flex items-center gap-2 font-bold text-base">
                     <Scissors className="w-4 h-4 text-amber-400" />
                     <span>TrimBook</span>
@@ -236,7 +233,6 @@ export default function Sidebar() {
                 </button>
             </div>
 
-            {/* Desktop Fixed Sidebar */}
             <aside className="hidden lg:block fixed inset-y-0 left-0 z-30 w-64">
                 <SidebarContent
                     user={user}
@@ -249,11 +245,10 @@ export default function Sidebar() {
                 />
             </aside>
 
-            {/* Mobile Slide-Over Drawer */}
             {mobileOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 flex">
                     <div
-                        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+                        className="fixed inset-0 bg-black/65 backdrop-blur-xs"
                         onClick={() => setMobileOpen(false)}
                     />
                     <div className="relative z-10">
