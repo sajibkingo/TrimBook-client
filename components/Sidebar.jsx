@@ -22,58 +22,18 @@ import {
     X,
 } from "lucide-react";
 
-export default function Sidebar({ user }) {
-    const pathname = usePathname();
-    const router = useRouter();
-    const [mobileOpen, setMobileOpen] = useState(false);
+function getInitials(name) {
+    if (!name) return "U";
+    return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+}
 
-    const isAdmin = user?.role === "admin";
-
-    const customerLinks = [
-        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        { name: "My Appointments", href: "/dashboard/my-appointments", icon: CalendarCheck },
-        { name: "My Profile", href: "/dashboard/profile", icon: UserCog },
-    ];
-
-    const adminLinks = [
-        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-        { name: "Manage Services", href: "/dashboard/manage-services", icon: Sparkles },
-        { name: "Add Service", href: "/dashboard/add-service", icon: PlusCircle },
-        { name: "Manage Appointments", href: "/dashboard/manage-appointments", icon: ClipboardList },
-        { name: "Manage Users", href: "/dashboard/manage-users", icon: Users },
-        { name: "Transactions", href: "/dashboard/transactions", icon: CreditCard },
-        { name: "My Profile", href: "/dashboard/profile", icon: UserCog },
-    ];
-
-    const links = isAdmin ? adminLinks : customerLinks;
-
-    const handleLogout = async () => {
-        try {
-            await signOut({
-                fetchOptions: {
-                    onSuccess: () => {
-                        toast.success("Logged out successfully");
-                        router.push("/");
-                        router.refresh();
-                    },
-                },
-            });
-        } catch (error) {
-            toast.error("Logout failed");
-        }
-    };
-
-    const getInitials = (name) => {
-        if (!name) return "U";
-        return name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    const SidebarContent = () => (
+function SidebarContent({ user, isAdmin, links, pathname, setMobileOpen, handleLogout }) {
+    return (
         <div className="flex flex-col h-full bg-zinc-950 text-zinc-100 w-64 select-none">
             <div className="flex items-center justify-between h-16 px-6 border-b border-zinc-800/80">
                 <Link href="/" className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-white">
@@ -149,6 +109,48 @@ export default function Sidebar({ user }) {
             </div>
         </div>
     );
+}
+
+export default function Sidebar({ user }) {
+    const pathname = usePathname();
+    const router = useRouter();
+    const [mobileOpen, setMobileOpen] = useState(false);
+
+    const isAdmin = user?.role === "admin";
+
+    const customerLinks = [
+        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+        { name: "My Appointments", href: "/dashboard/my-appointments", icon: CalendarCheck },
+        { name: "My Profile", href: "/dashboard/profile", icon: UserCog },
+    ];
+
+    const adminLinks = [
+        { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Manage Services", href: "/dashboard/manage-services", icon: Sparkles },
+        { name: "Add Service", href: "/dashboard/add-service", icon: PlusCircle },
+        { name: "Manage Appointments", href: "/dashboard/manage-appointments", icon: ClipboardList },
+        { name: "Manage Users", href: "/dashboard/manage-users", icon: Users },
+        { name: "Transactions", href: "/dashboard/transactions", icon: CreditCard },
+        { name: "My Profile", href: "/dashboard/profile", icon: UserCog },
+    ];
+
+    const links = isAdmin ? adminLinks : customerLinks;
+
+    const handleLogout = async () => {
+        try {
+            await signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        toast.success("Logged out successfully");
+                        router.push("/");
+                        router.refresh();
+                    },
+                },
+            });
+        } catch (error) {
+            toast.error("Logout failed");
+        }
+    };
 
     return (
         <>
@@ -168,7 +170,14 @@ export default function Sidebar({ user }) {
 
             <aside className="hidden lg:block shrink-0">
                 <div className="sticky top-0 h-screen">
-                    <SidebarContent />
+                    <SidebarContent
+                        user={user}
+                        isAdmin={isAdmin}
+                        links={links}
+                        pathname={pathname}
+                        setMobileOpen={setMobileOpen}
+                        handleLogout={handleLogout}
+                    />
                 </div>
             </aside>
 
@@ -179,7 +188,14 @@ export default function Sidebar({ user }) {
                         onClick={() => setMobileOpen(false)}
                     />
                     <div className="relative z-10">
-                        <SidebarContent />
+                        <SidebarContent
+                            user={user}
+                            isAdmin={isAdmin}
+                            links={links}
+                            pathname={pathname}
+                            setMobileOpen={setMobileOpen}
+                            handleLogout={handleLogout}
+                        />
                     </div>
                 </div>
             )}
