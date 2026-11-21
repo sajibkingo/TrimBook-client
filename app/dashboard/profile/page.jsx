@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { authClient } from "@/lib/auth-client";
+import { useSession, updateUser } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
 import { uploadImageToImgBB } from "@/lib/uploadImage";
 import Loader from "@/components/Loader";
@@ -17,36 +17,118 @@ import {
     Phone,
     ShieldCheck,
     Upload,
+    Link as LinkIcon,
     Loader2,
-    CheckCircle2,
+    Save,
 } from "lucide-react";
 
 export default function MyProfilePage() {
-    const [profile, setProfile] = useState(null);
+    const { data: session, isPending } = useSession();
+    const sessionUser = session?.user;
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [role, setRole] = useState("customer");
     const [phone, setPhone] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [imageFile, setImageFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState("");
 
     useEffect(() => {
+        if (isPending || !sessionUser) return;
+        let isMounted = true;
+
         async function loadProfile() {
             try {
-                const data = await apiRequest("/api/auth/me");
-                setProfile(data);
-                setName(data.name || "");
-                setPhone(data.phone || "");
-                setImageUrl(data.image || "");
+                const me = await apiRequest("/api/auth/me");
+                if (!isMounted) return;
+                setName(me.name || "");
+                setEmail(me.email || "");
+                setRole(me.role || "customer");
+                setPhone(me.phone || "");
+                setImageUrl(me.image || "");
+                setPreviewUrl(me.image || "");
             } catch (error) {
-                toast.error(error.message || "Failed to load profile");
+                if (isMounted) {
+                    setName(sessionUser.name || "");
+                    setEmail(sessionUser.email || "");
+                    setRole(sessionUser.role || "customer");
+                    setPhone(sessionUser.phone || "");
+                    setImageUrl(sessionUser.image || "");
+                    setPreviewUrl(sessionUser.image || "");
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         }
+
         loadProfile();
-    }, []);
+        return () => {
+            isMounted = false;
+        };
+    }, [isPending, sessionUser]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        setImageUrl("");
+        setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleUrlChange = (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+        if (url.trim()) {
+            setImageFile(null);
+            setPreviewUrl(url.trim());
+        } else {
+            setPreviewUrl("");
+        }
+    };
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+
+        if (!name.trim()) {
+            toast.error("Full name is required.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            let finalImage = imageUrl.trim();
+            if (imageFile) {
+                finalImage = await uploadImageToImgBB(imageFile);
+            }
+
+            const response = await apiRequest("/api/users/profile", {
+                method: "PATCH",
+                body: JSON.stringify({
+                    name: name.trim(),
+                    phone: phone.trim(),
+                    image: finalImage,
+                }),
+            });
+
+            await updateUser({
+                name: response.user.name,
+                image: response.user.image,
+            });
+
+            setImageFile(null);
+            setImageUrl(response.user.image || "");
+            setPreviewUrl(response.user.image || "");
+            toast.success(response.message || "Profile updated successfully!");
+        } catch (error) {
+            toast.error(error.message || "Failed to update profile");
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const getInitials = (fullName) => {
         if (!fullName) return "U";
@@ -58,221 +140,172 @@ export default function MyProfilePage() {
             .slice(0, 2);
     };
 
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-
-        if (!name.trim()) {
-            toast.error("Full name cannot be empty.");
-            return;
-        }
-
-        setSaving(true);
-        try {
-            let finalImage = imageUrl.trim();
-
-            if (imageFile) {
-                finalImage = await uploadImageToImgBB(imageFile);
-            }
-
-            const result = await apiRequest("/api/users/profile", {
-                method: "PATCH",
-                body: JSON.stringify({
-                    name: name.trim(),
-                    phone: phone.trim(),
-                    image: finalImage,
-                }),
-            });
-
-            await authClient.updateUser({
-                name: name.trim(),
-                image: finalImage || undefined,
-            });
-
-            setProfile(result.user);
-            setImageUrl(result.user.image || "");
-            setImageFile(null);
-            toast.success("Profile updated successfully!");
-        } catch (error) {
-            toast.error(error.message || "Failed to update profile");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    if (loading) {
+    if (isPending || loading) {
         return <Loader text="Loading your profile..." />;
     }
 
     return (
-        <div className="space-y-6">
+        <div className="max-w-3xl mx-auto space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs">
                 <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
                     Account Settings
                 </span>
                 <h1 className="text-2xl font-bold text-zinc-900 mt-1">My Profile</h1>
                 <p className="text-sm text-zinc-500 mt-0.5">
-                    View and update your personal details and profile photo.
+                    Update your personal contact details and profile avatar.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Profile Summary Card */}
-                <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center text-center space-y-4">
-                    <Avatar className="h-24 w-24 border-2 border-amber-500/40 shadow-xs">
-                        <AvatarImage src={imageUrl || profile?.image || ""} alt={profile?.name} />
-                        <AvatarFallback className="bg-zinc-900 text-amber-400 text-xl font-bold">
-                            {getInitials(profile?.name)}
-                        </AvatarFallback>
-                    </Avatar>
+            {/* Profile Header Card */}
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-5">
+                <Avatar className="h-20 w-20 border-2 border-amber-500/40 shadow-xs">
+                    <AvatarImage src={previewUrl || ""} alt={name} />
+                    <AvatarFallback className="bg-zinc-900 text-amber-400 text-xl font-bold">
+                        {getInitials(name)}
+                    </AvatarFallback>
+                </Avatar>
 
-                    <div className="space-y-1">
-                        <h2 className="text-xl font-bold text-zinc-900">{profile?.name}</h2>
-                        <p className="text-sm text-zinc-500">{profile?.email}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Badge className="bg-zinc-900 text-amber-400 hover:bg-zinc-900 uppercase text-[11px] tracking-wider px-3 py-1">
-                            {profile?.role || "customer"}
+                <div className="text-center sm:text-left space-y-1.5 flex-1">
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                        <h2 className="text-xl font-bold text-zinc-900">{name}</h2>
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 uppercase text-[11px]">
+                            {role}
                         </Badge>
-                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-[11px] px-3 py-1">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 text-[11px]">
                             Active
                         </Badge>
                     </div>
-
-                    <div className="w-full pt-4 border-t border-zinc-100 space-y-2.5 text-left text-xs text-zinc-600">
-                        <div className="flex items-center justify-between">
-                            <span className="text-zinc-400">Phone</span>
-                            <span className="font-medium text-zinc-800">
-                                {profile?.phone || "Not added yet"}
-                            </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-zinc-400">Account Security</span>
-                            <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Verified
-                            </span>
-                        </div>
-                    </div>
+                    <p className="text-sm text-zinc-500 flex items-center justify-center sm:justify-start gap-1.5">
+                        <Mail className="w-4 h-4 text-zinc-400" />
+                        <span>{email}</span>
+                    </p>
                 </div>
+            </div>
 
-                {/* Right Edit Profile Form */}
-                <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs">
-                    <h3 className="text-lg font-bold text-zinc-900 mb-5">
-                        Personal Information
-                    </h3>
-
-                    <form onSubmit={handleUpdateProfile} className="space-y-5">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                                <Label htmlFor="name" className="text-sm font-semibold text-zinc-800">
-                                    Full Name
-                                </Label>
-                                <div className="relative">
-                                    <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <Input
-                                        id="name"
-                                        type="text"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        required
-                                        className="pl-10 h-11 rounded-xl border-zinc-300"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="phone" className="text-sm font-semibold text-zinc-800">
-                                    Phone Number
-                                </Label>
-                                <div className="relative">
-                                    <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                    <Input
-                                        id="phone"
-                                        type="tel"
-                                        placeholder="+880 1XXX-XXXXXX"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        className="pl-10 h-11 rounded-xl border-zinc-300"
-                                    />
-                                </div>
+            {/* Editable Profile Form */}
+            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs">
+                <form onSubmit={handleSaveProfile} className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name">Full Name</Label>
+                            <div className="relative">
+                                <User className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                    className="pl-10 h-11 rounded-xl"
+                                />
                             </div>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="email" className="text-sm font-semibold text-zinc-800">
-                                Email Address <span className="text-xs font-normal text-zinc-400">(Cannot be changed)</span>
-                            </Label>
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <div className="relative">
+                                <Phone className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <Input
+                                    id="phone"
+                                    type="tel"
+                                    placeholder="+1 (555) 234-5678"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    className="pl-10 h-11 rounded-xl"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="email">Email Address (Read-Only)</Label>
                             <div className="relative">
                                 <Mail className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                                 <Input
                                     id="email"
                                     type="email"
-                                    value={profile?.email || ""}
+                                    value={email}
                                     disabled
-                                    className="pl-10 h-11 rounded-xl bg-zinc-100/80 text-zinc-500 border-zinc-200 cursor-not-allowed"
+                                    className="pl-10 h-11 rounded-xl bg-zinc-50 text-zinc-500 cursor-not-allowed"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label className="text-sm font-semibold text-zinc-800">
-                                Profile Photo (Upload New Image or Paste URL)
-                            </Label>
-                            <div className="flex items-center gap-2">
-                                <label className="flex-1 flex items-center justify-center gap-2 border border-dashed border-zinc-300 rounded-xl py-2.5 px-4 text-sm text-zinc-600 hover:bg-zinc-50 cursor-pointer transition">
-                                    <Upload className="w-4 h-4 text-zinc-500" />
-                                    <span className="truncate">
-                                        {imageFile ? imageFile.name : "Choose Image File"}
-                                    </span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                                    />
-                                </label>
-                                {imageFile && (
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setImageFile(null)}
-                                        className="text-xs text-rose-600 cursor-pointer"
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="role">Account Role (Protected)</Label>
+                            <div className="relative">
+                                <ShieldCheck className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <Input
+                                    id="role"
+                                    type="text"
+                                    value={role.toUpperCase()}
+                                    disabled
+                                    className="pl-10 h-11 rounded-xl bg-zinc-50 text-zinc-500 cursor-not-allowed"
+                                />
                             </div>
-                            <Input
-                                type="url"
-                                placeholder="Or paste image URL (https://...)"
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                disabled={!!imageFile}
-                                className="h-11 rounded-xl border-zinc-300 mt-2"
+                        </div>
+                    </div>
+
+                    {/* Profile Image Upload or URL */}
+                    <div className="space-y-3 pt-1">
+                        <Label>Profile Image (Upload Photo or Paste URL)</Label>
+
+                        <label className="flex items-center justify-center gap-2.5 border-2 border-dashed border-zinc-300 rounded-xl p-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer transition">
+                            <Upload className="w-4 h-4 text-amber-700" />
+                            <span>
+                                {imageFile
+                                    ? `Selected: ${imageFile.name}`
+                                    : "Click to upload a new profile photo (JPG, PNG, WebP)"}
+                            </span>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
                             />
+                        </label>
+
+                        <div className="relative flex items-center py-0.5">
+                            <div className="grow border-t border-zinc-200" />
+                            <span className="mx-3 text-xs font-medium uppercase text-zinc-400">
+                                Or paste image URL
+                            </span>
+                            <div className="grow border-t border-zinc-200" />
                         </div>
 
-                        <div className="pt-2 flex justify-end">
-                            <Button
-                                type="submit"
-                                disabled={saving}
-                                className="h-11 px-7 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-white font-semibold transition-colors cursor-pointer"
-                            >
-                                {saving ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        Saving Changes...
-                                    </>
-                                ) : (
-                                    "Save Profile Changes"
-                                )}
-                            </Button>
+                        <div className="relative">
+                            <LinkIcon className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <Input
+                                type="url"
+                                placeholder="https://example.com/avatar.jpg"
+                                value={imageUrl}
+                                onChange={handleUrlChange}
+                                className="pl-10 h-11 rounded-xl"
+                            />
                         </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                        <Button
+                            type="submit"
+                            disabled={saving}
+                            className="h-11 px-7 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-white font-semibold transition-colors cursor-pointer"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Saving Changes...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    Save Profile Changes
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </div>
     );
