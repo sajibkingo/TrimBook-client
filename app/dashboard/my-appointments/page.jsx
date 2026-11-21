@@ -26,6 +26,7 @@ import {
     Receipt,
     FileText,
     CheckCircle2,
+    ArrowRight,
 } from "lucide-react";
 
 export default function MyAppointmentsPage() {
@@ -142,7 +143,7 @@ export default function MyAppointmentsPage() {
     const getPaymentBadge = (paymentStatus) => {
         if (paymentStatus === "paid") {
             return (
-                <Badge className="bg-zinc-900 text-amber-400 hover:bg-zinc-900 capitalize">
+                <Badge className="bg-gradient-to-r from-zinc-900 to-amber-950 text-amber-300 border border-amber-400/30 capitalize">
                     Paid
                 </Badge>
             );
@@ -169,16 +170,19 @@ export default function MyAppointmentsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
-            <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+            {/* Luxury Gradient Header */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#271710] text-white p-6 sm:p-8 rounded-3xl border border-amber-500/20 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+
+                <div className="relative space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold uppercase tracking-widest">
+                        <Sparkles className="w-3 h-3" />
                         Booking History
                     </span>
-                    <h1 className="text-2xl font-bold text-zinc-900 mt-1">
-                        My Appointments
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
+                        My <span className="text-gold-gradient">Appointments</span>
                     </h1>
-                    <p className="text-sm text-zinc-500 mt-0.5">
+                    <p className="text-sm text-zinc-300">
                         Manage your appointment requests, view details, and complete payments for confirmed bookings.
                     </p>
                 </div>
@@ -187,17 +191,18 @@ export default function MyAppointmentsPage() {
                     href="/services"
                     className={cn(
                         buttonVariants(),
-                        "bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-white rounded-full px-6 h-11 font-semibold transition-colors w-fit"
+                        "relative btn-luxury-gradient text-white rounded-full px-6 h-11 font-semibold inline-flex items-center gap-2 w-fit shrink-0 shadow-md shadow-amber-500/20 border-0"
                     )}
                 >
-                    Book Another Service
+                    <span>Book Another Service</span>
+                    <ArrowRight className="w-4 h-4" />
                 </Link>
             </div>
 
             {/* Appointments List */}
             {appointments.length === 0 ? (
-                <div className="bg-white p-12 rounded-3xl border border-zinc-200/80 shadow-xs text-center space-y-4">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-700 flex items-center justify-center mx-auto">
+                <div className="bg-white/95 backdrop-blur-sm p-12 rounded-3xl border border-amber-200/70 shadow-xs text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 text-white flex items-center justify-center mx-auto shadow-sm">
                         <Sparkles className="w-7 h-7" />
                     </div>
                     <h2 className="text-xl font-bold text-zinc-900">
@@ -211,7 +216,7 @@ export default function MyAppointmentsPage() {
                             href="/services"
                             className={cn(
                                 buttonVariants(),
-                                "bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6 h-11"
+                                "btn-luxury-gradient text-white rounded-full px-6 h-11 font-semibold border-0"
                             )}
                         >
                             Explore Salon Services
@@ -230,9 +235,8 @@ export default function MyAppointmentsPage() {
                         return (
                             <div
                                 key={appointment._id}
-                                className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+                                className="group bg-white/95 backdrop-blur-sm p-5 sm:p-6 rounded-3xl border border-amber-200/70 shadow-xs hover:shadow-lg hover:shadow-amber-500/10 hover:border-amber-300 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5"
                             >
-                                {/* Left Info */}
                                 <div className="flex items-start gap-4">
                                     <img
                                         src={
@@ -240,12 +244,12 @@ export default function MyAppointmentsPage() {
                                             "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80"
                                         }
                                         alt={service.serviceName || "Salon Service"}
-                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 border border-zinc-200/80"
+                                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shrink-0 ring-1 ring-amber-200"
                                     />
 
                                     <div className="space-y-1.5">
                                         <div className="flex flex-wrap items-center gap-2 text-xs">
-                                            <span className="font-semibold uppercase tracking-wider text-amber-700">
+                                            <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-rose-100 text-amber-900 font-bold uppercase tracking-wider text-[10px]">
                                                 {service.category || "Salon Treatment"}
                                             </span>
                                             <span className="text-zinc-300">•</span>
@@ -260,21 +264,20 @@ export default function MyAppointmentsPage() {
 
                                         <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-zinc-600 pt-0.5">
                                             <span className="inline-flex items-center gap-1.5">
-                                                <Calendar className="w-4 h-4 text-zinc-400" />
+                                                <Calendar className="w-4 h-4 text-amber-600" />
                                                 <span>{appointment.appointmentDate}</span>
                                             </span>
                                             <span className="inline-flex items-center gap-1.5">
-                                                <Clock className="w-4 h-4 text-zinc-400" />
+                                                <Clock className="w-4 h-4 text-orange-600" />
                                                 <span>{appointment.timeSlot}</span>
                                             </span>
-                                            <span className="font-bold text-zinc-900">
+                                            <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 font-extrabold text-amber-900">
                                                 ${Number(appointment.servicePrice || service.price || 0).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Right Badges & Action Buttons */}
                                 <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-zinc-100">
                                     <div className="flex items-center gap-2">
                                         {getStatusBadge(appointment.status)}
@@ -287,9 +290,9 @@ export default function MyAppointmentsPage() {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => setSelectedAppointment(appointment)}
-                                            className="rounded-xl h-9 px-3.5 border-zinc-200 text-zinc-700 hover:bg-zinc-100 cursor-pointer"
+                                            className="rounded-xl h-9 px-3.5 border-amber-200 text-zinc-800 hover:bg-amber-50 cursor-pointer"
                                         >
-                                            <Eye className="w-4 h-4 mr-1.5" />
+                                            <Eye className="w-4 h-4 mr-1.5 text-amber-700" />
                                             <span>Details</span>
                                         </Button>
 
@@ -300,7 +303,7 @@ export default function MyAppointmentsPage() {
                                                 size="sm"
                                                 disabled={cancellingId === appointment._id}
                                                 onClick={() => handleCancelAppointment(appointment._id)}
-                                                className="rounded-xl h-9 px-3.5 border-rose-200 bg-rose-50/60 text-rose-700 hover:bg-rose-100 hover:text-rose-800 cursor-pointer"
+                                                className="rounded-xl h-9 px-3.5 border-rose-200 bg-rose-50/70 text-rose-700 hover:bg-rose-100 hover:text-rose-800 cursor-pointer"
                                             >
                                                 {cancellingId === appointment._id ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -319,7 +322,7 @@ export default function MyAppointmentsPage() {
                                                 size="sm"
                                                 disabled={payingId === appointment._id}
                                                 onClick={() => handlePayNow(appointment._id)}
-                                                className="rounded-xl h-9 px-4 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold shadow-xs cursor-pointer"
+                                                className="rounded-xl h-9 px-4 btn-luxury-gradient text-white font-semibold shadow-sm border-0 cursor-pointer"
                                             >
                                                 {payingId === appointment._id ? (
                                                     <>
@@ -349,7 +352,7 @@ export default function MyAppointmentsPage() {
                     if (!open) setSelectedAppointment(null);
                 }}
             >
-                <DialogContent className="sm:max-w-lg rounded-3xl p-6">
+                <DialogContent className="sm:max-w-lg rounded-3xl p-6 border-amber-200/80">
                     {selectedAppointment && (
                         <>
                             <DialogHeader>
@@ -362,7 +365,7 @@ export default function MyAppointmentsPage() {
                             </DialogHeader>
 
                             <div className="space-y-4 pt-2 text-sm">
-                                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-[#FAF9F6] border border-zinc-200/80">
+                                <div className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/80 to-rose-50/60 border border-amber-200/80">
                                     <img
                                         src={
                                             selectedAppointment.serviceInfo?.image ||
@@ -375,7 +378,7 @@ export default function MyAppointmentsPage() {
                                         className="w-16 h-16 rounded-xl object-cover shrink-0"
                                     />
                                     <div>
-                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">
                                             {selectedAppointment.serviceInfo?.category ||
                                                 "Salon Treatment"}
                                         </span>
@@ -383,7 +386,7 @@ export default function MyAppointmentsPage() {
                                             {selectedAppointment.serviceInfo?.serviceName ||
                                                 "Salon Service"}
                                         </h4>
-                                        <p className="text-xs text-zinc-500">
+                                        <p className="text-xs text-zinc-600">
                                             Duration:{" "}
                                             {selectedAppointment.serviceInfo?.duration || 60} mins
                                         </p>
@@ -466,7 +469,7 @@ export default function MyAppointmentsPage() {
                                         <span className="text-xs text-zinc-400 block">
                                             Total Service Fee
                                         </span>
-                                        <span className="text-lg font-bold text-zinc-950">
+                                        <span className="text-lg font-extrabold text-zinc-950">
                                             $
                                             {Number(
                                                 selectedAppointment.servicePrice ||
@@ -497,7 +500,7 @@ export default function MyAppointmentsPage() {
                                                     type="button"
                                                     disabled={payingId === selectedAppointment._id}
                                                     onClick={() => handlePayNow(selectedAppointment._id)}
-                                                    className="rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold cursor-pointer"
+                                                    className="rounded-xl btn-luxury-gradient text-white font-semibold border-0 cursor-pointer"
                                                 >
                                                     <CreditCard className="w-4 h-4 mr-1.5" />
                                                     Proceed to Pay

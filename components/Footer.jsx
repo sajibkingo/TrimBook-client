@@ -2,13 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-    Scissors,
-    MapPin,
-    Phone,
-    Mail,
-    Clock,
-} from "lucide-react";
+import BrandLogo from "@/components/BrandLogo";
+import { MapPin, Phone, Mail, Clock } from "lucide-react";
 
 export default function Footer() {
     const pathname = usePathname();
@@ -18,19 +13,14 @@ export default function Footer() {
     }
 
     return (
-        <footer className="bg-[#18181B] text-zinc-300 border-t border-zinc-800">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <footer className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#231416] text-zinc-300 border-t border-amber-500/20">
+            <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-rose-500/10 blur-3xl pointer-events-none" />
+
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                     <div className="space-y-4">
-                        <Link
-                            href="/"
-                            className="inline-flex items-center gap-2.5 text-xl font-bold tracking-tight text-white"
-                        >
-                            <span className="p-2 rounded-xl bg-amber-500/15 text-amber-400">
-                                <Scissors className="w-5 h-5" />
-                            </span>
-                            <span>TrimBook</span>
-                        </Link>
+                        <BrandLogo variant="dark" />
                         <p className="text-sm text-zinc-400 leading-relaxed">
                             Modern salon and wellness booking platform crafted for effortless
                             appointments, transparent pricing, and personalized studio care.
@@ -41,7 +31,7 @@ export default function Footer() {
                                 target="_blank"
                                 rel="noreferrer"
                                 aria-label="Instagram"
-                                className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-amber-300 hover:border-amber-400/40 transition"
                             >
                                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -54,7 +44,7 @@ export default function Footer() {
                                 target="_blank"
                                 rel="noreferrer"
                                 aria-label="Facebook"
-                                className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-amber-300 hover:border-amber-400/40 transition"
                             >
                                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
@@ -65,7 +55,7 @@ export default function Footer() {
                                 target="_blank"
                                 rel="noreferrer"
                                 aria-label="X"
-                                className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:border-amber-500/40 transition"
+                                className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-amber-300 hover:border-amber-400/40 transition"
                             >
                                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
@@ -75,47 +65,32 @@ export default function Footer() {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
                             Quick Links
                         </h3>
                         <ul className="space-y-2.5 text-sm">
                             <li>
-                                <Link
-                                    href="/"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
-                                >
+                                <Link href="/" className="text-zinc-400 hover:text-amber-300 transition">
                                     Home
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/services"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
-                                >
+                                <Link href="/services" className="text-zinc-400 hover:text-amber-300 transition">
                                     Browse Services
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/dashboard"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
-                                >
+                                <Link href="/dashboard" className="text-zinc-400 hover:text-amber-300 transition">
                                     Member Dashboard
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/sign-in"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
-                                >
+                                <Link href="/sign-in" className="text-zinc-400 hover:text-amber-300 transition">
                                     Sign In
                                 </Link>
                             </li>
                             <li>
-                                <Link
-                                    href="/sign-up"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
-                                >
+                                <Link href="/sign-up" className="text-zinc-400 hover:text-amber-300 transition">
                                     Create Account
                                 </Link>
                             </li>
@@ -123,14 +98,14 @@ export default function Footer() {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
                             Popular Services
                         </h3>
                         <ul className="space-y-2.5 text-sm">
                             <li>
                                 <Link
                                     href="/services?category=Haircut%20%26%20Styling"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
+                                    className="text-zinc-400 hover:text-amber-300 transition"
                                 >
                                     Haircut & Styling
                                 </Link>
@@ -138,7 +113,7 @@ export default function Footer() {
                             <li>
                                 <Link
                                     href="/services?category=Hair%20Coloring"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
+                                    className="text-zinc-400 hover:text-amber-300 transition"
                                 >
                                     Hair Coloring & Balayage
                                 </Link>
@@ -146,7 +121,7 @@ export default function Footer() {
                             <li>
                                 <Link
                                     href="/services?category=Facial%20%26%20Skincare"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
+                                    className="text-zinc-400 hover:text-amber-300 transition"
                                 >
                                     Facial & Skincare
                                 </Link>
@@ -154,7 +129,7 @@ export default function Footer() {
                             <li>
                                 <Link
                                     href="/services?category=Manicure%20%26%20Pedicure"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
+                                    className="text-zinc-400 hover:text-amber-300 transition"
                                 >
                                     Manicure & Pedicure
                                 </Link>
@@ -162,7 +137,7 @@ export default function Footer() {
                             <li>
                                 <Link
                                     href="/services?category=Spa%20%26%20Massage"
-                                    className="text-zinc-400 hover:text-amber-400 transition"
+                                    className="text-zinc-400 hover:text-amber-300 transition"
                                 >
                                     Spa & Massage Rituals
                                 </Link>
@@ -171,7 +146,7 @@ export default function Footer() {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold uppercase tracking-wider text-white">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-300">
                             Studio Info
                         </h3>
                         <ul className="space-y-3 text-sm text-zinc-400">
@@ -195,16 +170,16 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="mt-12 pt-6 border-t border-zinc-800/90 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+                <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
                     <p>© {new Date().getFullYear()} TrimBook Salon & Wellness. All rights reserved.</p>
                     <div className="flex items-center gap-6">
-                        <Link href="/services" className="hover:text-zinc-300 transition">
+                        <Link href="/services" className="hover:text-amber-300 transition">
                             Service Menu
                         </Link>
-                        <Link href="/dashboard" className="hover:text-zinc-300 transition">
+                        <Link href="/dashboard" className="hover:text-amber-300 transition">
                             Bookings
                         </Link>
-                        <Link href="/sign-up" className="hover:text-zinc-300 transition">
+                        <Link href="/sign-up" className="hover:text-amber-300 transition">
                             Membership
                         </Link>
                     </div>

@@ -12,6 +12,7 @@ import {
     ArrowUpDown,
     RotateCcw,
     Scissors,
+    Sparkles,
 } from "lucide-react";
 
 const API_BASE_URL =
@@ -83,7 +84,9 @@ function BrowseServicesContent({ initialCategory }) {
                 if (isMounted) setServices([]);
             } finally {
                 if (isMounted) {
-                    setLoadedQueryKey(`${searchTerm.trim()}|${selectedCategory}|${sortOrder}`);
+                    setLoadedQueryKey(
+                        `${searchTerm.trim()}|${selectedCategory}|${sortOrder}`
+                    );
                 }
             }
         }, 250);
@@ -101,16 +104,19 @@ function BrowseServicesContent({ initialCategory }) {
     };
 
     return (
-        <div className="min-h-screen bg-[#FAF9F6] text-zinc-900">
-            <section className="bg-[#18181B] text-white py-14 sm:py-16 border-b border-zinc-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
-                        Treatment Menu
-                    </span>
-                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                        Explore Our Salon Services
+        <div className="min-h-screen bg-luxury-mesh text-zinc-900">
+            <section className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#271710] text-white py-14 sm:py-16 border-b border-amber-500/20">
+                <div className="absolute -top-20 right-10 w-80 h-80 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-semibold uppercase tracking-widest">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Treatment Menu</span>
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                        Explore Our{" "}
+                        <span className="text-gold-gradient">Salon Services</span>
                     </h1>
-                    <p className="text-sm sm:text-base text-zinc-400 max-w-2xl">
+                    <p className="text-sm sm:text-base text-zinc-300 max-w-2xl">
                         Search treatments by name, filter by salon specialty, or sort by
                         price to find the ideal session for your schedule.
                     </p>
@@ -118,7 +124,7 @@ function BrowseServicesContent({ initialCategory }) {
             </section>
 
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                <div className="bg-white p-4 sm:p-6 rounded-3xl border border-zinc-200/80 shadow-xs space-y-4">
+                <div className="bg-white/95 backdrop-blur-md p-4 sm:p-6 rounded-3xl border border-amber-200/70 shadow-sm space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                         <div className="md:col-span-6 relative">
                             <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -171,9 +177,9 @@ function BrowseServicesContent({ initialCategory }) {
                                         key={cat}
                                         type="button"
                                         onClick={() => setSelectedCategory(cat)}
-                                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition cursor-pointer ${active
-                                                ? "bg-zinc-900 text-amber-400 font-semibold"
-                                                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70"
+                                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${active
+                                                ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold shadow-xs"
+                                                : "bg-zinc-100 text-zinc-600 hover:bg-amber-50 hover:text-amber-900"
                                             }`}
                                     >
                                         {cat}
@@ -202,7 +208,7 @@ function BrowseServicesContent({ initialCategory }) {
                 {isLoading ? (
                     <Loader text="Fetching salon services..." />
                 ) : services.length === 0 ? (
-                    <div className="bg-white rounded-3xl border border-zinc-200/80 p-14 text-center space-y-3">
+                    <div className="bg-white/95 rounded-3xl border border-amber-200/70 p-14 text-center space-y-3">
                         <Scissors className="w-8 h-8 text-amber-600 mx-auto" />
                         <h2 className="text-xl font-bold text-zinc-900">
                             No Matching Services Found
@@ -215,7 +221,7 @@ function BrowseServicesContent({ initialCategory }) {
                             <Button
                                 type="button"
                                 onClick={handleResetFilters}
-                                className="rounded-full bg-zinc-900 hover:bg-zinc-800 text-white px-6 cursor-pointer"
+                                className="rounded-full btn-luxury-gradient text-white px-6 border-0 cursor-pointer"
                             >
                                 Clear All Filters
                             </Button>

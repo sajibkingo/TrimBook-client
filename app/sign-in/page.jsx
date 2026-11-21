@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { signIn, signOut } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Scissors, Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2 } from "lucide-react";
 
 export default function SignInPage() {
     const router = useRouter();
@@ -87,16 +88,15 @@ export default function SignInPage() {
     };
 
     return (
-        <div className="min-h-[85vh] bg-[#FAF9F6] flex items-center justify-center px-4 py-12">
-            <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl border border-zinc-200/80 shadow-xs space-y-6">
-                <div className="text-center space-y-2">
-                    <Link
-                        href="/"
-                        className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-900 text-amber-400 mx-auto"
-                    >
-                        <Scissors className="w-6 h-6" />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-zinc-900">Welcome Back</h1>
+        <div className="min-h-[85vh] bg-luxury-mesh flex items-center justify-center px-4 py-12">
+            <div className="w-full max-w-md bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-3xl border border-amber-200/70 shadow-xl shadow-amber-500/5 space-y-6">
+                <div className="text-center space-y-2.5">
+                    <div className="flex justify-center">
+                        <BrandLogo />
+                    </div>
+                    <h1 className="text-2xl font-extrabold text-zinc-900 pt-1">
+                        Welcome Back
+                    </h1>
                     <p className="text-sm text-zinc-500">
                         Sign in to your TrimBook account to manage your salon appointments.
                     </p>
@@ -138,7 +138,7 @@ export default function SignInPage() {
                     <Button
                         type="submit"
                         disabled={loading || googleLoading}
-                        className="w-full h-11 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-white font-semibold transition-colors cursor-pointer"
+                        className="w-full h-11 rounded-xl btn-luxury-gradient text-white font-semibold shadow-sm border-0 cursor-pointer"
                     >
                         {loading ? (
                             <>
@@ -164,7 +164,7 @@ export default function SignInPage() {
                     variant="outline"
                     disabled={loading || googleLoading}
                     onClick={handleGoogleSignIn}
-                    className="w-full h-11 rounded-xl border-zinc-300 hover:bg-zinc-50 font-medium cursor-pointer"
+                    className="w-full h-11 rounded-xl border-zinc-300 hover:bg-amber-50/50 font-medium cursor-pointer"
                 >
                     {googleLoading ? (
                         <>
@@ -200,7 +200,7 @@ export default function SignInPage() {
                     Don&apos;t have an account?{" "}
                     <Link
                         href="/sign-up"
-                        className="font-semibold text-zinc-900 hover:text-amber-700 underline underline-offset-4"
+                        className="font-semibold text-amber-800 hover:text-rose-700 underline underline-offset-4"
                     >
                         Create Account
                     </Link>

@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSession, signOut } from "@/lib/auth-client";
+import BrandLogo from "@/components/BrandLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Scissors,
     LayoutDashboard,
     CalendarCheck,
     Sparkles,
@@ -43,18 +43,7 @@ function SidebarContent({
     return (
         <div className="flex flex-col h-full bg-gradient-to-b from-[#09090B] via-[#18181B] to-[#1E1416] text-zinc-100 w-64 select-none border-r border-zinc-800/80">
             <div className="h-16 px-6 flex items-center justify-between border-b border-zinc-800/80">
-                <Link
-                    href="/"
-                    onClick={onNavigate}
-                    className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-white group"
-                >
-                    <span className="p-1.5 rounded-xl bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-rose-500/25 border border-amber-400/30 text-amber-400 group-hover:scale-105 transition-transform">
-                        <Scissors className="w-5 h-5" />
-                    </span>
-                    <span className="bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
-                        TrimBook
-                    </span>
-                </Link>
+                <BrandLogo variant="dark" size="sm" onClick={onNavigate} />
 
                 <button
                     type="button"
@@ -218,10 +207,7 @@ export default function Sidebar() {
     return (
         <>
             <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between h-14 px-4 bg-gradient-to-r from-[#09090B] via-[#18181B] to-[#1E1416] text-white border-b border-zinc-800">
-                <Link href="/" className="flex items-center gap-2 font-bold text-base">
-                    <Scissors className="w-4 h-4 text-amber-400" />
-                    <span>TrimBook</span>
-                </Link>
+                <BrandLogo variant="dark" size="sm" />
 
                 <button
                     type="button"
