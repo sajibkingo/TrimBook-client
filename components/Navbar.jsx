@@ -21,6 +21,7 @@ import {
     Menu,
     X,
     LayoutDashboard,
+    User,
     LogOut,
     ChevronDown,
 } from "lucide-react";
@@ -48,16 +49,11 @@ export default function Navbar() {
 
     const handleLogout = async () => {
         try {
-            await signOut({
-                fetchOptions: {
-                    onSuccess: () => {
-                        toast.success("Logged out successfully");
-                        setMobileMenuOpen(false);
-                        router.push("/");
-                        router.refresh();
-                    },
-                },
-            });
+            await signOut();
+            toast.success("Logged out successfully");
+            setMobileMenuOpen(false);
+            router.push("/sign-in");
+            router.refresh();
         } catch (error) {
             toast.error("Failed to log out");
         }
@@ -125,7 +121,7 @@ export default function Navbar() {
                                     <ChevronDown className="w-4 h-4 text-zinc-500" />
                                 </DropdownMenuTrigger>
 
-                                <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5">
+                                <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 z-50">
                                     <DropdownMenuLabel className="font-normal">
                                         <div className="flex flex-col space-y-1">
                                             <p className="text-sm font-semibold text-zinc-900 leading-none">
@@ -150,13 +146,21 @@ export default function Navbar() {
                                         <span>Dashboard</span>
                                     </DropdownMenuItem>
 
+                                    <DropdownMenuItem
+                                        onClick={() => router.push("/dashboard/profile")}
+                                        className="cursor-pointer rounded-lg flex items-center gap-2"
+                                    >
+                                        <User className="w-4 h-4 text-zinc-600" />
+                                        <span>My Profile</span>
+                                    </DropdownMenuItem>
+
                                     <DropdownMenuSeparator />
 
                                     <DropdownMenuItem
                                         onClick={handleLogout}
-                                        className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50"
+                                        className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center gap-2"
                                     >
-                                        <LogOut className="w-4 h-4 mr-2" />
+                                        <LogOut className="w-4 h-4" />
                                         <span>Logout</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -214,13 +218,22 @@ export default function Navbar() {
                             Browse Services
                         </Link>
                         {mounted && user && (
-                            <Link
-                                href="/dashboard"
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
-                            >
-                                Dashboard
-                            </Link>
+                            <>
+                                <Link
+                                    href="/dashboard"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                                >
+                                    Dashboard
+                                </Link>
+                                <Link
+                                    href="/dashboard/profile"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="px-3 py-2 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100"
+                                >
+                                    My Profile
+                                </Link>
+                            </>
                         )}
                     </div>
 
@@ -244,7 +257,7 @@ export default function Navbar() {
                                 <Button
                                     variant="destructive"
                                     onClick={handleLogout}
-                                    className="w-full rounded-xl"
+                                    className="w-full rounded-xl cursor-pointer"
                                 >
                                     <LogOut className="w-4 h-4 mr-2" />
                                     Logout

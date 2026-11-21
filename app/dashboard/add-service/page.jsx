@@ -17,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Upload, Loader2, ImagePlus } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, ImagePlus, Link as LinkIcon } from "lucide-react";
 
 const CATEGORIES = [
     "Haircut & Styling",
@@ -39,6 +39,7 @@ export default function AddServicePage() {
     const [duration, setDuration] = useState("");
     const [status, setStatus] = useState("active");
     const [imageFile, setImageFile] = useState(null);
+    const [imageUrl, setImageUrl] = useState("");
     const [previewUrl, setPreviewUrl] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -46,7 +47,19 @@ export default function AddServicePage() {
         const file = e.target.files?.[0];
         if (!file) return;
         setImageFile(file);
+        setImageUrl("");
         setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleUrlChange = (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+        if (url.trim()) {
+            setImageFile(null);
+            setPreviewUrl(url.trim());
+        } else {
+            setPreviewUrl("");
+        }
     };
 
     const handleCreateService = async (e) => {
@@ -67,14 +80,17 @@ export default function AddServicePage() {
             toast.error("Estimated duration must be a positive number.");
             return;
         }
-        if (!imageFile) {
-            toast.error("Please upload a service image file.");
+        if (!imageFile && !imageUrl.trim()) {
+            toast.error("Please upload a service image file or enter an image URL.");
             return;
         }
 
         setSubmitting(true);
         try {
-            const uploadedImageUrl = await uploadImageToImgBB(imageFile);
+            let finalImageUrl = imageUrl.trim();
+            if (imageFile) {
+                finalImageUrl = await uploadImageToImgBB(imageFile);
+            }
 
             await apiRequest("/api/services", {
                 method: "POST",
@@ -84,7 +100,7 @@ export default function AddServicePage() {
                     description: description.trim(),
                     price: numPrice,
                     duration: numDuration,
-                    image: uploadedImageUrl,
+                    image: finalImageUrl,
                     status,
                 }),
             });
@@ -212,8 +228,8 @@ export default function AddServicePage() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Service Image (Upload Image File)</Label>
+                    <div className="space-y-3">
+                        <Label>Service Image (Upload Image File or Paste URL)</Label>
                         <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 rounded-2xl p-6 text-center hover:bg-zinc-50 cursor-pointer transition">
                             {previewUrl ? (
                                 <img
@@ -229,7 +245,9 @@ export default function AddServicePage() {
                             <div className="flex items-center gap-2 text-sm font-medium text-zinc-700">
                                 <Upload className="w-4 h-4" />
                                 <span>
-                                    {imageFile ? imageFile.name : "Click to upload service photo (JPG, PNG, WebP)"}
+                                    {imageFile
+                                        ? imageFile.name
+                                        : "Click to upload service photo (JPG, PNG, WebP)"}
                                 </span>
                             </div>
                             <input
@@ -239,6 +257,25 @@ export default function AddServicePage() {
                                 className="hidden"
                             />
                         </label>
+
+                        <div className="relative flex items-center py-1">
+                            <div className="grow border-t border-zinc-200" />
+                            <span className="mx-3 text-xs font-medium uppercase text-zinc-400">
+                                Or paste image URL
+                            </span>
+                            <div className="grow border-t border-zinc-200" />
+                        </div>
+
+                        <div className="relative">
+                            <LinkIcon className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <Input
+                                type="url"
+                                placeholder="https://images.unsplash.com/..."
+                                value={imageUrl}
+                                onChange={handleUrlChange}
+                                className="pl-10 h-11 rounded-xl"
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-2 flex items-center justify-end gap-3">
@@ -258,7 +295,7 @@ export default function AddServicePage() {
                             {submitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Uploading & Saving...
+                                    Saving Service...
                                 </>
                             ) : (
                                 "Create Service"

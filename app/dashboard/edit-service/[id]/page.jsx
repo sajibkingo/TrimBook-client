@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, Link as LinkIcon } from "lucide-react";
 
 const CATEGORIES = [
     "Haircut & Styling",
@@ -44,6 +44,7 @@ export default function EditServicePage() {
     const [duration, setDuration] = useState("");
     const [status, setStatus] = useState("active");
     const [existingImage, setExistingImage] = useState("");
+    const [imageUrl, setImageUrl] = useState("");
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState("");
 
@@ -61,6 +62,7 @@ export default function EditServicePage() {
                 setDuration(String(data.duration ?? ""));
                 setStatus(data.status || "active");
                 setExistingImage(data.image || "");
+                setImageUrl(data.image || "");
                 setPreviewUrl(data.image || "");
             } catch (error) {
                 if (isMounted) {
@@ -82,7 +84,19 @@ export default function EditServicePage() {
         const file = e.target.files?.[0];
         if (!file) return;
         setImageFile(file);
+        setImageUrl("");
         setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleUrlChange = (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+        if (url.trim()) {
+            setImageFile(null);
+            setPreviewUrl(url.trim());
+        } else {
+            setPreviewUrl(existingImage);
+        }
     };
 
     const handleUpdateService = async (e) => {
@@ -106,9 +120,15 @@ export default function EditServicePage() {
 
         setSubmitting(true);
         try {
-            let finalImageUrl = existingImage;
+            let finalImageUrl = imageUrl.trim() || existingImage;
             if (imageFile) {
                 finalImageUrl = await uploadImageToImgBB(imageFile);
+            }
+
+            if (!finalImageUrl) {
+                toast.error("Please provide a service image file or URL.");
+                setSubmitting(false);
+                return;
             }
 
             await apiRequest(`/api/services/${id}`, {
@@ -244,8 +264,8 @@ export default function EditServicePage() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Service Image (Upload New Image File to Replace)</Label>
+                    <div className="space-y-3">
+                        <Label>Service Image (Upload New Image File or Paste URL)</Label>
                         <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 rounded-2xl p-6 text-center hover:bg-zinc-50 cursor-pointer transition">
                             {previewUrl && (
                                 <img
@@ -267,6 +287,25 @@ export default function EditServicePage() {
                                 className="hidden"
                             />
                         </label>
+
+                        <div className="relative flex items-center py-1">
+                            <div className="grow border-t border-zinc-200" />
+                            <span className="mx-3 text-xs font-medium uppercase text-zinc-400">
+                                Or paste image URL
+                            </span>
+                            <div className="grow border-t border-zinc-200" />
+                        </div>
+
+                        <div className="relative">
+                            <LinkIcon className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <Input
+                                type="url"
+                                placeholder="https://images.unsplash.com/..."
+                                value={imageUrl}
+                                onChange={handleUrlChange}
+                                className="pl-10 h-11 rounded-xl"
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-2 flex items-center justify-end gap-3">
