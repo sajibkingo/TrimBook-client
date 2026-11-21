@@ -34,20 +34,26 @@ export default function MyAppointmentsPage() {
     const [cancellingId, setCancellingId] = useState(null);
     const [payingId, setPayingId] = useState(null);
 
-    const fetchMyAppointments = async () => {
-        setLoading(true);
-        try {
-            const data = await apiRequest("/api/appointments/my");
-            setAppointments(data);
-        } catch (error) {
-            toast.error(error.message || "Failed to load your appointments");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchMyAppointments();
+        let isMounted = true;
+
+        async function loadAppointments() {
+            try {
+                const data = await apiRequest("/api/appointments/my");
+                if (isMounted) setAppointments(data);
+            } catch (error) {
+                if (isMounted) {
+                    toast.error(error.message || "Failed to load your appointments");
+                }
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        }
+
+        loadAppointments();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const handleCancelAppointment = async (appointmentId) => {
