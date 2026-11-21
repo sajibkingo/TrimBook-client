@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { useSession, updateUser } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
 import { uploadImageToImgBB } from "@/lib/uploadImage";
 import Loader from "@/components/Loader";
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export default function MyProfilePage() {
-    const { data: session, isPending } = useSession();
+    const { data: session, isPending, refetch } = useSession();
     const sessionUser = session?.user;
 
     const [loading, setLoading] = useState(true);
@@ -114,10 +114,9 @@ export default function MyProfilePage() {
                 }),
             });
 
-            await updateUser({
-                name: response.user.name,
-                image: response.user.image,
-            });
+            if (typeof refetch === "function") {
+                await refetch();
+            }
 
             setImageFile(null);
             setImageUrl(response.user.image || "");
@@ -156,7 +155,6 @@ export default function MyProfilePage() {
                 </p>
             </div>
 
-            {/* Profile Header Card */}
             <div className="bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col sm:flex-row items-center gap-5">
                 <Avatar className="h-20 w-20 border-2 border-amber-500/40 shadow-xs">
                     <AvatarImage src={previewUrl || ""} alt={name} />
@@ -182,7 +180,6 @@ export default function MyProfilePage() {
                 </div>
             </div>
 
-            {/* Editable Profile Form */}
             <div className="bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs">
                 <form onSubmit={handleSaveProfile} className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -247,7 +244,6 @@ export default function MyProfilePage() {
                         </div>
                     </div>
 
-                    {/* Profile Image Upload or URL */}
                     <div className="space-y-3 pt-1">
                         <Label>Profile Image (Upload Photo or Paste URL)</Label>
 
