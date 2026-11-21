@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSession, signOut } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 
@@ -23,51 +24,80 @@ export default function DashboardLayout({ children }) {
     const pathname = usePathname();
     const router = useRouter();
 
-    const user = session?.user;
-    const role = user?.role || "customer";
+    const [verifiedUser, setVerifiedUser] = useState(null);
+    const [verifyingServer, setVerifyingServer] = useState(true);
 
     useEffect(() => {
         if (isPending) return;
 
-        if (!user) {
+        if (!session?.user) {
             router.replace("/sign-in");
             return;
         }
 
-        if (user.isBlocked) {
-            signOut().then(() => {
-                toast.error("Your account is blocked. Contact support.");
+        let isMounted = true;
+
+        async function verifyUserWithServer() {
+            try {
+                const liveUser = await apiRequest("/api/auth/me");
+
+                if (!isMounted) return;
+
+                if (liveUser.isBlocked) {
+                    await signOut();
+                    toast.error("Your account has been blocked by the administrator.");
+                    router.replace("/sign-in");
+                    return;
+                }
+
+                const role = liveUser.role || "customer";
+                const isAdminRoute = ADMIN_ONLY_ROUTES.some((route) =>
+                    pathname?.startsWith(route)
+                );
+                const isCustomerRoute = CUSTOMER_ONLY_ROUTES.some((route) =>
+                    pathname?.startsWith(route)
+                );
+
+                if (role !== "admin" && isAdminRoute) {
+                    toast.error("Access Denied: Only Admins can access that page.");
+                    router.replace("/dashboard");
+                    return;
+                }
+
+                if (role === "admin" && isCustomerRoute) {
+                    toast.error("Access Denied: Customer-only dashboard route.");
+                    router.replace("/dashboard");
+                    return;
+                }
+
+                setVerifiedUser(liveUser);
+                setVerifyingServer(false);
+            } catch (error) {
+                if (!isMounted) return;
+                await signOut();
+                toast.error(error.message || "Session invalid or blocked. Please sign in again.");
                 router.replace("/sign-in");
-            });
-            return;
+            }
         }
 
-        const isAdminRoute = ADMIN_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
-        const isCustomerRoute = CUSTOMER_ONLY_ROUTES.some((route) => pathname?.startsWith(route));
+        verifyUserWithServer();
 
-        if (role !== "admin" && isAdminRoute) {
-            toast.error("Unauthorized: Admin access only.");
-            router.replace("/dashboard");
-            return;
-        }
+        return () => {
+            isMounted = false;
+        };
+    }, [session, isPending, pathname, router]);
 
-        if (role === "admin" && isCustomerRoute) {
-            toast.error("Admins cannot access customer booking pages.");
-            router.replace("/dashboard");
-        }
-    }, [user, isPending, pathname, role, router]);
-
-    if (isPending || !user) {
+    if (isPending || verifyingServer || !verifiedUser) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
-                <Loader text="Verifying your dashboard access..." />
+                <Loader text="Verifying permissions..." />
             </div>
         );
     }
 
     return (
         <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAF9F6]">
-            <Sidebar user={user} />
+            <Sidebar user={verifiedUser} />
             <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
                 <div className="max-w-6xl mx-auto">{children}</div>
             </div>

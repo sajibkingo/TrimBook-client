@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,17 +25,26 @@ import {
     ChevronDown,
 } from "lucide-react";
 
+const emptySubscribe = () => () => { };
+
 export default function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
     const { data: session, isPending } = useSession();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    const mounted = useSyncExternalStore(
+        emptySubscribe,
+        () => true,
+        () => false
+    );
+
     if (pathname?.startsWith("/dashboard")) {
         return null;
     }
 
     const user = session?.user;
+    const showLoading = !mounted || isPending;
 
     const handleLogout = async () => {
         try {
@@ -90,7 +100,7 @@ export default function Navbar() {
                         <Link href="/services" className={navLinkClass("/services")}>
                             Browse Services
                         </Link>
-                        {user && (
+                        {mounted && user && (
                             <Link href="/dashboard" className={navLinkClass("/dashboard")}>
                                 Dashboard
                             </Link>
@@ -98,23 +108,21 @@ export default function Navbar() {
                     </nav>
 
                     <div className="hidden md:flex items-center gap-3">
-                        {isPending ? (
+                        {showLoading ? (
                             <div className="h-9 w-28 rounded-full bg-zinc-100 animate-pulse" />
                         ) : user ? (
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full border border-zinc-200 bg-zinc-50/70 hover:bg-zinc-100 transition cursor-pointer focus:outline-none">
-                                        <Avatar className="h-8 w-8 border border-zinc-200">
-                                            <AvatarImage src={user.image || ""} alt={user.name} />
-                                            <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
-                                                {getInitials(user.name)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-sm font-medium text-zinc-800 max-w-[130px] truncate">
-                                            {user.name}
-                                        </span>
-                                        <ChevronDown className="w-4 h-4 text-zinc-500" />
-                                    </button>
+                                <DropdownMenuTrigger className="flex items-center gap-2.5 pl-1.5 pr-3 py-1 rounded-full border border-zinc-200 bg-zinc-50/70 hover:bg-zinc-100 transition cursor-pointer focus:outline-none">
+                                    <Avatar className="h-8 w-8 border border-zinc-200">
+                                        <AvatarImage src={user.image || ""} alt={user.name} />
+                                        <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
+                                            {getInitials(user.name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm font-medium text-zinc-800 max-w-[130px] truncate">
+                                        {user.name}
+                                    </span>
+                                    <ChevronDown className="w-4 h-4 text-zinc-500" />
                                 </DropdownMenuTrigger>
 
                                 <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5">
@@ -134,11 +142,12 @@ export default function Navbar() {
 
                                     <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
-                                        <Link href="/dashboard" className="flex items-center gap-2">
-                                            <LayoutDashboard className="w-4 h-4 text-zinc-600" />
-                                            <span>Dashboard</span>
-                                        </Link>
+                                    <DropdownMenuItem
+                                        onClick={() => router.push("/dashboard")}
+                                        className="cursor-pointer rounded-lg flex items-center gap-2"
+                                    >
+                                        <LayoutDashboard className="w-4 h-4 text-zinc-600" />
+                                        <span>Dashboard</span>
                                     </DropdownMenuItem>
 
                                     <DropdownMenuSeparator />
@@ -154,12 +163,24 @@ export default function Navbar() {
                             </DropdownMenu>
                         ) : (
                             <>
-                                <Button variant="ghost" asChild className="text-zinc-700 hover:text-zinc-950 font-medium">
-                                    <Link href="/sign-in">Sign In</Link>
-                                </Button>
-                                <Button asChild className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-5 font-medium">
-                                    <Link href="/sign-up">Sign Up</Link>
-                                </Button>
+                                <Link
+                                    href="/sign-in"
+                                    className={cn(
+                                        buttonVariants({ variant: "ghost" }),
+                                        "text-zinc-700 hover:text-zinc-950 font-medium"
+                                    )}
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    href="/sign-up"
+                                    className={cn(
+                                        buttonVariants(),
+                                        "bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-5 font-medium"
+                                    )}
+                                >
+                                    Sign Up
+                                </Link>
                             </>
                         )}
                     </div>
@@ -192,7 +213,7 @@ export default function Navbar() {
                         >
                             Browse Services
                         </Link>
-                        {user && (
+                        {mounted && user && (
                             <Link
                                 href="/dashboard"
                                 onClick={() => setMobileMenuOpen(false)}
@@ -204,7 +225,7 @@ export default function Navbar() {
                     </div>
 
                     <div className="pt-3 border-t border-zinc-100">
-                        {isPending ? (
+                        {showLoading ? (
                             <div className="h-10 w-full rounded-lg bg-zinc-100 animate-pulse" />
                         ) : user ? (
                             <div className="space-y-3">
@@ -231,16 +252,23 @@ export default function Navbar() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 gap-2.5">
-                                <Button variant="outline" asChild className="w-full rounded-xl">
-                                    <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
-                                        Sign In
-                                    </Link>
-                                </Button>
-                                <Button asChild className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl">
-                                    <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                                        Sign Up
-                                    </Link>
-                                </Button>
+                                <Link
+                                    href="/sign-in"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={cn(buttonVariants({ variant: "outline" }), "w-full rounded-xl")}
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    href="/sign-up"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={cn(
+                                        buttonVariants(),
+                                        "w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl"
+                                    )}
+                                >
+                                    Sign Up
+                                </Link>
                             </div>
                         )}
                     </div>

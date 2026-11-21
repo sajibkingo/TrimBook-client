@@ -147,10 +147,9 @@ export default function ServiceDetailsPage() {
                 <div>
                     <Link
                         href="/services"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950 transition"
+                        className="inline-flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6 h-10 text-sm font-medium transition"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Back to All Services</span>
+                        Back to Browse Services
                     </Link>
                 </div>
 
@@ -320,8 +319,8 @@ export default function ServiceDetailsPage() {
                                                         type="button"
                                                         onClick={() => setTimeSlot(slot)}
                                                         className={`py-2.5 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer ${selected
-                                                                ? "bg-zinc-900 text-amber-400 border-zinc-900 shadow-xs"
-                                                                : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                                                            ? "bg-zinc-900 text-amber-400 border-zinc-900 shadow-xs"
+                                                            : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:border-zinc-400"
                                                             }`}
                                                     >
                                                         {slot}
