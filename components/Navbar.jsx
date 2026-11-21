@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -49,13 +50,17 @@ export default function Navbar() {
 
     const handleLogout = async () => {
         try {
-            await signOut();
-            toast.success("Logged out successfully");
-            setMobileMenuOpen(false);
-            router.push("/sign-in");
-            router.refresh();
+            await signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        toast.success("Logged out successfully");
+                        setMobileMenuOpen(false);
+                        window.location.href = "/sign-in";
+                    },
+                },
+            });
         } catch (error) {
-            toast.error("Failed to log out");
+            window.location.href = "/sign-in";
         }
     };
 
@@ -122,47 +127,53 @@ export default function Navbar() {
                                 </DropdownMenuTrigger>
 
                                 <DropdownMenuContent align="end" className="w-56 rounded-xl p-1.5 z-50">
-                                    <DropdownMenuLabel className="font-normal">
-                                        <div className="flex flex-col space-y-1">
-                                            <p className="text-sm font-semibold text-zinc-900 leading-none">
-                                                {user.name}
-                                            </p>
-                                            <p className="text-xs text-zinc-500 truncate">
-                                                {user.email}
-                                            </p>
-                                            <span className="inline-block w-fit mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800">
-                                                {user.role || "customer"}
-                                            </span>
-                                        </div>
-                                    </DropdownMenuLabel>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuLabel className="font-normal">
+                                            <div className="flex flex-col space-y-1">
+                                                <p className="text-sm font-semibold text-zinc-900 leading-none">
+                                                    {user.name}
+                                                </p>
+                                                <p className="text-xs text-zinc-500 truncate">
+                                                    {user.email}
+                                                </p>
+                                                <span className="inline-block w-fit mt-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800">
+                                                    {user.role || "customer"}
+                                                </span>
+                                            </div>
+                                        </DropdownMenuLabel>
+                                    </DropdownMenuGroup>
 
                                     <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem
-                                        onClick={() => router.push("/dashboard")}
-                                        className="cursor-pointer rounded-lg flex items-center gap-2"
-                                    >
-                                        <LayoutDashboard className="w-4 h-4 text-zinc-600" />
-                                        <span>Dashboard</span>
-                                    </DropdownMenuItem>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            onClick={() => router.push("/dashboard")}
+                                            className="cursor-pointer rounded-lg flex items-center gap-2"
+                                        >
+                                            <LayoutDashboard className="w-4 h-4 text-zinc-600" />
+                                            <span>Dashboard</span>
+                                        </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() => router.push("/dashboard/profile")}
-                                        className="cursor-pointer rounded-lg flex items-center gap-2"
-                                    >
-                                        <User className="w-4 h-4 text-zinc-600" />
-                                        <span>My Profile</span>
-                                    </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => router.push("/dashboard/profile")}
+                                            className="cursor-pointer rounded-lg flex items-center gap-2"
+                                        >
+                                            <User className="w-4 h-4 text-zinc-600" />
+                                            <span>My Profile</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
 
                                     <DropdownMenuSeparator />
 
-                                    <DropdownMenuItem
-                                        onClick={handleLogout}
-                                        className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center gap-2"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        <span>Logout</span>
-                                    </DropdownMenuItem>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            onClick={handleLogout}
+                                            className="cursor-pointer rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50 flex items-center gap-2"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                            <span>Logout</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (

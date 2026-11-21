@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { useSession } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
@@ -36,15 +36,15 @@ export default function MyProfilePage() {
     const [imageUrl, setImageUrl] = useState("");
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState("");
+    const loadedRef = useRef(false);
 
     useEffect(() => {
-        if (isPending || !sessionUser) return;
-        let isMounted = true;
+        if (isPending || !sessionUser || loadedRef.current) return;
+        loadedRef.current = true;
 
         async function loadProfile() {
             try {
                 const me = await apiRequest("/api/auth/me");
-                if (!isMounted) return;
                 setName(me.name || "");
                 setEmail(me.email || "");
                 setRole(me.role || "customer");
@@ -52,23 +52,18 @@ export default function MyProfilePage() {
                 setImageUrl(me.image || "");
                 setPreviewUrl(me.image || "");
             } catch (error) {
-                if (isMounted) {
-                    setName(sessionUser.name || "");
-                    setEmail(sessionUser.email || "");
-                    setRole(sessionUser.role || "customer");
-                    setPhone(sessionUser.phone || "");
-                    setImageUrl(sessionUser.image || "");
-                    setPreviewUrl(sessionUser.image || "");
-                }
+                setName(sessionUser.name || "");
+                setEmail(sessionUser.email || "");
+                setRole(sessionUser.role || "customer");
+                setPhone(sessionUser.phone || "");
+                setImageUrl(sessionUser.image || "");
+                setPreviewUrl(sessionUser.image || "");
             } finally {
-                if (isMounted) setLoading(false);
+                setLoading(false);
             }
         }
 
         loadProfile();
-        return () => {
-            isMounted = false;
-        };
     }, [isPending, sessionUser]);
 
     const handleFileChange = (e) => {
@@ -119,6 +114,8 @@ export default function MyProfilePage() {
             }
 
             setImageFile(null);
+            setName(response.user.name || "");
+            setPhone(response.user.phone || "");
             setImageUrl(response.user.image || "");
             setPreviewUrl(response.user.image || "");
             toast.success(response.message || "Profile updated successfully!");

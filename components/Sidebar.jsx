@@ -97,8 +97,8 @@ function SidebarContent({
                             href={item.href}
                             onClick={onNavigate}
                             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
-                                    ? "bg-amber-500 text-zinc-950 font-semibold shadow-xs"
-                                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/70"
+                                ? "bg-amber-500 text-zinc-950 font-semibold shadow-xs"
+                                : "text-zinc-400 hover:text-white hover:bg-zinc-800/70"
                                 }`}
                         >
                             <Icon
@@ -204,13 +204,16 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            await signOut();
-            toast.success("Logged out successfully");
-            setMobileOpen(false);
-            router.push("/sign-in");
-            router.refresh();
+            await signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        toast.success("Logged out successfully");
+                        window.location.href = "/sign-in";
+                    },
+                },
+            });
         } catch (error) {
-            toast.error("Failed to log out");
+            window.location.href = "/sign-in";
         }
     };
 
