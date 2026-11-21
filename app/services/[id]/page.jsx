@@ -8,10 +8,11 @@ import { useSession } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
 import Loader from "@/components/Loader";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
     ArrowLeft,
     Clock,
@@ -46,6 +47,8 @@ export default function ServiceDetailsPage() {
     const [showBookingForm, setShowBookingForm] = useState(false);
     const [appointmentDate, setAppointmentDate] = useState("");
     const [timeSlot, setTimeSlot] = useState("");
+    const [bookedSlots, setBookedSlots] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -60,22 +63,55 @@ export default function ServiceDetailsPage() {
 
     useEffect(() => {
         if (!user || !id) return;
+        let isMounted = true;
 
         async function fetchService() {
-            setLoading(true);
-            setErrorMessage("");
             try {
                 const data = await apiRequest(`/api/services/${id}`);
-                setService(data);
+                if (isMounted) setService(data);
             } catch (error) {
-                setErrorMessage(error.message || "Invalid or unavailable service ID.");
+                if (isMounted) {
+                    setErrorMessage(error.message || "Invalid or unavailable service ID.");
+                }
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         }
 
         fetchService();
+        return () => {
+            isMounted = false;
+        };
     }, [id, user]);
+
+    useEffect(() => {
+        if (!appointmentDate || !id || !user) return;
+        let isMounted = true;
+
+        async function fetchBookedSlots() {
+            setLoadingSlots(true);
+            try {
+                const slots = await apiRequest(
+                    `/api/appointments/booked-slots?serviceId=${id}&date=${appointmentDate}`
+                );
+                if (isMounted) {
+                    setBookedSlots(slots);
+                    if (slots.includes(timeSlot)) {
+                        setTimeSlot("");
+                    }
+                }
+            } catch (error) {
+                if (isMounted) setBookedSlots([]);
+            } finally {
+                if (isMounted) setLoadingSlots(false);
+            }
+        }
+
+        fetchBookedSlots();
+        return () => {
+            isMounted = false;
+        };
+    }, [appointmentDate, id, user, timeSlot]);
 
     const todayStr = new Date().toISOString().split("T")[0];
 
@@ -87,7 +123,11 @@ export default function ServiceDetailsPage() {
             return;
         }
         if (!timeSlot) {
-            toast.error("Please choose an available time slot.");
+            toast.error("Please select an available time slot.");
+            return;
+        }
+        if (bookedSlots.includes(timeSlot)) {
+            toast.error("That time slot is already booked. Please choose another.");
             return;
         }
 
@@ -103,10 +143,12 @@ export default function ServiceDetailsPage() {
                 }),
             });
 
-            toast.success("Appointment request submitted! Track status in My Appointments.");
+            toast.success(
+                "Appointment request submitted! Status is Pending until confirmed by our studio."
+            );
             router.push("/dashboard/my-appointments");
         } catch (error) {
-            toast.error(error.message || "Failed to book appointment.");
+            toast.error(error.message || "Failed to submit appointment request.");
         } finally {
             setSubmitting(false);
         }
@@ -129,11 +171,18 @@ export default function ServiceDetailsPage() {
                     </div>
                     <h1 className="text-xl font-bold text-zinc-900">Service Not Found</h1>
                     <p className="text-sm text-zinc-500">
-                        {errorMessage || "The salon service ID you requested is invalid or no longer exists."}
+                        {errorMessage ||
+                            "The salon service ID you requested is invalid or no longer exists."}
                     </p>
-                    <Button asChild className="bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6">
-                        <Link href="/services">Back to Browse Services</Link>
-                    </Button>
+                    <Link
+                        href="/services"
+                        className={cn(
+                            buttonVariants(),
+                            "bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6"
+                        )}
+                    >
+                        Back to Browse Services
+                    </Link>
                 </div>
             </div>
         );
@@ -147,9 +196,10 @@ export default function ServiceDetailsPage() {
                 <div>
                     <Link
                         href="/services"
-                        className="inline-flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 text-white rounded-full px-6 h-10 text-sm font-medium transition"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950 transition"
                     >
-                        Back to Browse Services
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Back to All Services</span>
                     </Link>
                 </div>
 
@@ -207,7 +257,9 @@ export default function ServiceDetailsPage() {
                             </div>
 
                             <div className="space-y-2.5">
-                                <h2 className="text-base font-bold text-zinc-900">About This Treatment</h2>
+                                <h2 className="text-base font-bold text-zinc-900">
+                                    About This Treatment
+                                </h2>
                                 <p className="text-sm sm:text-base text-zinc-600 leading-relaxed whitespace-pre-line">
                                     {service.description}
                                 </p>
@@ -220,7 +272,7 @@ export default function ServiceDetailsPage() {
                                 </div>
                                 <div className="flex items-center gap-2.5 p-3.5 rounded-xl bg-[#FAF9F6] border border-zinc-200/70 text-xs sm:text-sm text-zinc-700">
                                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                                    <span>Flexible rescheduling before confirmation</span>
+                                    <span>Free cancellation while status is Pending</span>
                                 </div>
                             </div>
                         </div>
@@ -266,14 +318,20 @@ export default function ServiceDetailsPage() {
                                     <div className="p-4 rounded-2xl bg-[#FAF9F6] border border-zinc-200/80 space-y-2 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-zinc-500">Service</span>
-                                            <span className="font-semibold text-zinc-900">{service.serviceName}</span>
+                                            <span className="font-semibold text-zinc-900">
+                                                {service.serviceName}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-zinc-500">Duration</span>
-                                            <span className="font-medium text-zinc-800">{service.duration} mins</span>
+                                            <span className="font-medium text-zinc-800">
+                                                {service.duration} mins
+                                            </span>
                                         </div>
                                         <div className="flex justify-between pt-2 border-t border-zinc-200/80">
-                                            <span className="font-semibold text-zinc-900">Total Due After Confirm</span>
+                                            <span className="font-semibold text-zinc-900">
+                                                Total Due After Confirm
+                                            </span>
                                             <span className="font-bold text-zinc-950">
                                                 ${Number(service.price).toFixed(2)}
                                             </span>
@@ -292,8 +350,11 @@ export default function ServiceDetailsPage() {
                             ) : (
                                 <form onSubmit={handleBookingSubmit} className="space-y-5">
                                     <div className="space-y-2">
-                                        <Label htmlFor="appointmentDate" className="text-sm font-semibold text-zinc-800">
-                                            Select Date
+                                        <Label
+                                            htmlFor="appointmentDate"
+                                            className="text-sm font-semibold text-zinc-800"
+                                        >
+                                            Appointment Date
                                         </Label>
                                         <Input
                                             id="appointmentDate"
@@ -307,23 +368,41 @@ export default function ServiceDetailsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label className="text-sm font-semibold text-zinc-800">
-                                            Available Time Slot
-                                        </Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-sm font-semibold text-zinc-800">
+                                                Available Time Slot
+                                            </Label>
+                                            {loadingSlots && (
+                                                <span className="text-xs text-zinc-400">
+                                                    Checking slots...
+                                                </span>
+                                            )}
+                                        </div>
+
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                             {TIME_SLOTS.map((slot) => {
+                                                const isBooked = bookedSlots.includes(slot);
                                                 const selected = timeSlot === slot;
+
                                                 return (
                                                     <button
                                                         key={slot}
                                                         type="button"
+                                                        disabled={isBooked}
                                                         onClick={() => setTimeSlot(slot)}
-                                                        className={`py-2.5 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer ${selected
-                                                            ? "bg-zinc-900 text-amber-400 border-zinc-900 shadow-xs"
-                                                            : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                                                        className={`py-2.5 px-2.5 rounded-xl text-xs font-semibold border transition ${isBooked
+                                                                ? "bg-zinc-100 text-zinc-400 border-zinc-200 line-through cursor-not-allowed"
+                                                                : selected
+                                                                    ? "bg-zinc-900 text-amber-400 border-zinc-900 shadow-xs cursor-pointer"
+                                                                    : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:border-zinc-400 cursor-pointer"
                                                             }`}
                                                     >
-                                                        {slot}
+                                                        <span>{slot}</span>
+                                                        {isBooked && (
+                                                            <span className="block text-[10px] no-underline text-rose-500">
+                                                                Booked
+                                                            </span>
+                                                        )}
                                                     </button>
                                                 );
                                             })}
@@ -331,8 +410,12 @@ export default function ServiceDetailsPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="message" className="text-sm font-semibold text-zinc-800">
-                                            Additional Message <span className="text-zinc-400 font-normal">(Optional)</span>
+                                        <Label
+                                            htmlFor="message"
+                                            className="text-sm font-semibold text-zinc-800"
+                                        >
+                                            Additional Message{" "}
+                                            <span className="text-zinc-400 font-normal">(Optional)</span>
                                         </Label>
                                         <Textarea
                                             id="message"
@@ -349,7 +432,7 @@ export default function ServiceDetailsPage() {
                                             type="button"
                                             variant="outline"
                                             onClick={() => setShowBookingForm(false)}
-                                            className="h-11 rounded-xl border-zinc-300"
+                                            className="h-11 rounded-xl border-zinc-300 cursor-pointer"
                                         >
                                             Cancel
                                         </Button>

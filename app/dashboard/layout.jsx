@@ -26,6 +26,7 @@ export default function DashboardLayout({ children }) {
 
     const [verifiedUser, setVerifiedUser] = useState(null);
     const [verifyingServer, setVerifyingServer] = useState(true);
+    const [reconnecting, setReconnecting] = useState(false);
 
     useEffect(() => {
         if (isPending) return;
@@ -36,12 +37,16 @@ export default function DashboardLayout({ children }) {
         }
 
         let isMounted = true;
+        let retryTimer = null;
+        let networkToastShown = false;
 
         async function verifyUserWithServer() {
             try {
                 const liveUser = await apiRequest("/api/auth/me");
 
                 if (!isMounted) return;
+
+                setReconnecting(false);
 
                 if (liveUser.isBlocked) {
                     await signOut();
@@ -74,6 +79,19 @@ export default function DashboardLayout({ children }) {
                 setVerifyingServer(false);
             } catch (error) {
                 if (!isMounted) return;
+
+                if (error.isNetworkError) {
+                    // Backend unreachable (e.g., server restarting) — retry instead
+                    // of treating it as a dead session and signing the user out.
+                    if (!networkToastShown) {
+                        networkToastShown = true;
+                        toast.error(error.message);
+                    }
+                    setReconnecting(true);
+                    retryTimer = setTimeout(verifyUserWithServer, 4000);
+                    return;
+                }
+
                 await signOut();
                 toast.error(error.message || "Session invalid or blocked. Please sign in again.");
                 router.replace("/sign-in");
@@ -84,13 +102,20 @@ export default function DashboardLayout({ children }) {
 
         return () => {
             isMounted = false;
+            clearTimeout(retryTimer);
         };
     }, [session, isPending, pathname, router]);
 
     if (isPending || verifyingServer || !verifiedUser) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
-                <Loader text="Verifying permissions..." />
+                <Loader
+                    text={
+                        reconnecting
+                            ? "Can't reach the server — retrying..."
+                            : "Verifying permissions..."
+                    }
+                />
             </div>
         );
     }
