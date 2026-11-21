@@ -27,13 +27,7 @@ function PaymentSuccessContent() {
     const verifiedRef = useRef(false);
 
     useEffect(() => {
-        if (!sessionId) {
-            setErrorMessage("Missing Stripe checkout session ID.");
-            setVerifying(false);
-            return;
-        }
-
-        if (verifiedRef.current) return;
+        if (!sessionId || verifiedRef.current) return;
         verifiedRef.current = true;
 
         async function verifyPayment() {
@@ -56,6 +50,35 @@ function PaymentSuccessContent() {
 
         verifyPayment();
     }, [sessionId]);
+
+    if (!sessionId) {
+        return (
+            <div className="max-w-lg mx-auto py-10">
+                <div className="bg-white p-8 rounded-3xl border border-zinc-200/80 shadow-xs text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+                        <XCircle className="w-8 h-8" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-zinc-900">
+                        Missing Payment Session
+                    </h1>
+                    <p className="text-sm text-zinc-500">
+                        Missing Stripe checkout session ID. Please return to your appointments and try again.
+                    </p>
+                    <div className="pt-2">
+                        <Link
+                            href="/dashboard/my-appointments"
+                            className={cn(
+                                buttonVariants(),
+                                "bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl px-6 h-11"
+                            )}
+                        >
+                            Return to My Appointments
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (verifying) {
         return <Loader text="Verifying your Stripe payment..." />;
