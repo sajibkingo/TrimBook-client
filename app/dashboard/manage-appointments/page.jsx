@@ -6,73 +6,65 @@ import { apiRequest } from "@/lib/api";
 import Loader from "@/components/Loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Search,
-    Calendar,
+    CalendarCheck,
     Clock,
-    Eye,
+    Calendar,
     CheckCircle2,
     XCircle,
     Loader2,
-    MessageSquare,
+    Sparkles,
+    User,
 } from "lucide-react";
 
 export default function ManageAppointmentsPage() {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [updatingId, setUpdatingId] = useState(null);
-    const [selectedAppointment, setSelectedAppointment] = useState(null);
 
     useEffect(() => {
         let isMounted = true;
 
-        async function loadAppointments() {
+        async function fetchAllAppointments() {
             try {
-                const data = await apiRequest("/api/appointments");
-                if (isMounted) setAppointments(data);
+                const data = await apiRequest("/api/appointments/admin/all");
+                if (isMounted && Array.isArray(data)) {
+                    setAppointments(data);
+                }
             } catch (error) {
                 if (isMounted) {
-                    toast.error(error.message || "Failed to load appointments");
+                    toast.error(error.message || "Failed to load customer appointments");
                 }
             } finally {
                 if (isMounted) setLoading(false);
             }
         }
 
-        loadAppointments();
+        fetchAllAppointments();
         return () => {
             isMounted = false;
         };
     }, []);
 
-    const handleStatusChange = async (appointmentId, nextStatus) => {
+    const handleStatusChange = async (appointmentId, newStatus) => {
         setUpdatingId(appointmentId);
         try {
-            await apiRequest(`/api/appointments/${appointmentId}/status`, {
-                method: "PATCH",
-                body: JSON.stringify({ status: nextStatus }),
-            });
+            const res = await apiRequest(
+                `/api/appointments/admin/${appointmentId}/status`,
+                {
+                    method: "PATCH",
+                    body: JSON.stringify({ status: newStatus }),
+                }
+            );
 
-            toast.success(`Appointment ${nextStatus} successfully.`);
             setAppointments((prev) =>
                 prev.map((item) =>
-                    item._id === appointmentId ? { ...item, status: nextStatus } : item
+                    item._id === appointmentId ? { ...item, status: newStatus } : item
                 )
             );
-            if (selectedAppointment?._id === appointmentId) {
-                setSelectedAppointment((prev) => ({ ...prev, status: nextStatus }));
-            }
+
+            toast.success(res.message || `Appointment marked as ${newStatus}`);
         } catch (error) {
             toast.error(error.message || "Failed to update appointment status");
         } finally {
@@ -106,7 +98,7 @@ export default function ManageAppointmentsPage() {
     const getPaymentBadge = (paymentStatus) => {
         if (paymentStatus === "paid") {
             return (
-                <Badge className="bg-zinc-900 text-amber-400 hover:bg-zinc-900 capitalize">
+                <Badge className="bg-gradient-to-r from-zinc-900 to-amber-950 text-amber-300 border border-amber-400/30 capitalize">
                     Paid
                 </Badge>
             );
@@ -118,178 +110,140 @@ export default function ManageAppointmentsPage() {
         );
     };
 
-    const formatDate = (dateValue) => {
-        if (!dateValue) return "N/A";
-        return new Date(dateValue).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    };
-
-    const filteredAppointments = appointments.filter((appt) => {
-        const query = searchTerm.trim().toLowerCase();
-        const matchesSearch =
-            !query ||
-            appt.customerInfo?.name?.toLowerCase().includes(query) ||
-            appt.customerInfo?.email?.toLowerCase().includes(query) ||
-            appt.serviceInfo?.serviceName?.toLowerCase().includes(query);
-        const matchesStatus =
-            statusFilter === "all" || appt.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+    const filteredAppointments = appointments.filter((item) =>
+        statusFilter === "all" ? true : item.status === statusFilter
+    );
 
     if (loading) {
-        return <Loader text="Loading all appointment requests..." />;
+        return <Loader text="Loading studio appointments..." />;
     }
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                    Schedule Operations
-                </span>
-                <h1 className="text-2xl font-bold text-zinc-900 mt-1">
-                    Manage Appointments
-                </h1>
-                <p className="text-sm text-zinc-500 mt-0.5">
-                    Review customer booking requests, confirm pending appointments, or cancel bookings.
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#271710] text-white p-6 sm:p-8 rounded-3xl border border-amber-500/20 shadow-lg">
+                <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+                <div className="absolute left-1/3 -bottom-20 w-64 h-64 rounded-full bg-rose-500/15 blur-3xl pointer-events-none" />
+
+                <div className="relative space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold uppercase tracking-widest">
+                        <Sparkles className="w-3 h-3" />
+                        Booking Operations
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
+                        Manage <span className="text-gold-gradient">Appointments</span>
+                    </h1>
+                    <p className="text-sm text-zinc-300">
+                        Review customer booking requests, confirm time slots, or cancel unavailable bookings.
+                    </p>
+                </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="bg-white/95 backdrop-blur-sm p-4 rounded-3xl border border-amber-200/70 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                    {["all", "pending", "confirmed", "cancelled"].map((tab) => {
+                        const active = statusFilter === tab;
+                        return (
+                            <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setStatusFilter(tab)}
+                                className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-all cursor-pointer ${active
+                                        ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-xs"
+                                        : "bg-zinc-100 text-zinc-600 hover:bg-amber-50 hover:text-amber-900"
+                                    }`}
+                            >
+                                {tab}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <p className="text-xs font-semibold text-zinc-500">
+                    Showing{" "}
+                    <span className="font-extrabold text-zinc-950">
+                        {filteredAppointments.length}
+                    </span>{" "}
+                    bookings
                 </p>
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <Input
-                        type="text"
-                        placeholder="Search by customer name, email, or service..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-10 rounded-xl border-zinc-200"
-                    />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                    {["all", "pending", "confirmed", "cancelled"].map((tab) => (
-                        <button
-                            key={tab}
-                            type="button"
-                            onClick={() => setStatusFilter(tab)}
-                            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition cursor-pointer ${statusFilter === tab
-                                    ? "bg-zinc-900 text-amber-400"
-                                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                                }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
             {filteredAppointments.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-zinc-200/80 p-14 text-center space-y-2">
+                <div className="bg-white/95 backdrop-blur-sm p-12 rounded-3xl border border-amber-200/70 text-center space-y-3 shadow-xs">
+                    <CalendarCheck className="w-8 h-8 text-amber-600 mx-auto" />
                     <h2 className="text-lg font-bold text-zinc-900">
-                        No Appointment Requests Found
+                        No Appointments in This Category
                     </h2>
                     <p className="text-sm text-zinc-500">
-                        No appointments match your current search or filter criteria.
+                        Switch filter tabs above to view other booking statuses.
                     </p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filteredAppointments.map((appt) => {
-                        const customer = appt.customerInfo || {};
-                        const service = appt.serviceInfo || {};
-                        const canConfirm = appt.status === "pending";
-                        const canCancel =
-                            appt.status === "pending" || appt.status === "confirmed";
+                    {filteredAppointments.map((appointment) => {
+                        const service = appointment.serviceInfo || {};
+                        const customer = appointment.userInfo || {};
 
                         return (
                             <div
-                                key={appt._id}
-                                className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-5"
+                                key={appointment._id}
+                                className="bg-white/95 backdrop-blur-sm p-5 sm:p-6 rounded-3xl border border-amber-200/70 shadow-xs hover:shadow-lg hover:shadow-amber-500/10 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-5"
                             >
-                                <div className="space-y-3 flex-1 min-w-0">
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        <div className="flex items-center gap-2.5">
-                                            <Avatar className="h-9 w-9 border border-zinc-200">
-                                                <AvatarImage src={customer.image || ""} alt={customer.name} />
-                                                <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
-                                                    {(customer.name || "C").slice(0, 2).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="text-sm font-bold text-zinc-900 leading-none">
-                                                    {customer.name || "Customer"}
-                                                </p>
-                                                <p className="text-xs text-zinc-500 mt-0.5">
-                                                    {customer.email || "No email"}
-                                                </p>
-                                            </div>
-                                        </div>
+                                <div className="space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-rose-100 text-amber-900 text-[10px] font-bold uppercase tracking-wider">
+                                            {service.category || "Salon Service"}
+                                        </span>
+                                        {getStatusBadge(appointment.status)}
+                                        {getPaymentBadge(appointment.paymentStatus)}
+                                    </div>
 
-                                        <span className="text-zinc-300 hidden sm:inline">•</span>
-                                        <span className="text-xs text-zinc-400">
-                                            Requested: {formatDate(appt.createdAt)}
+                                    <h3 className="text-lg font-bold text-zinc-900">
+                                        {service.serviceName || "Salon Treatment"}
+                                    </h3>
+
+                                    <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-zinc-600">
+                                        <span className="inline-flex items-center gap-1.5 font-medium text-zinc-800">
+                                            <User className="w-4 h-4 text-amber-700" />
+                                            <span>
+                                                {customer.name || appointment.userName || "Customer"} (
+                                                {customer.email || appointment.userEmail})
+                                            </span>
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Calendar className="w-4 h-4 text-amber-600" />
+                                            <span>{appointment.appointmentDate}</span>
+                                        </span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <Clock className="w-4 h-4 text-orange-600" />
+                                            <span>{appointment.timeSlot}</span>
+                                        </span>
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-50 font-extrabold text-amber-900">
+                                            ${Number(appointment.servicePrice || service.price || 0).toFixed(2)}
                                         </span>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                                        <span className="font-semibold text-zinc-900">
-                                            {service.serviceName || "Salon Service"}
-                                        </span>
-                                        <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/70">
-                                            {service.category || "Treatment"}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 text-zinc-600">
-                                            <Calendar className="w-4 h-4 text-zinc-400" />
-                                            {appt.appointmentDate}
-                                        </span>
-                                        <span className="inline-flex items-center gap-1.5 text-zinc-600">
-                                            <Clock className="w-4 h-4 text-zinc-400" />
-                                            {appt.timeSlot}
-                                        </span>
-                                        <span className="font-bold text-zinc-950">
-                                            ${Number(appt.servicePrice).toFixed(2)}
-                                        </span>
-                                    </div>
-
-                                    {appt.message && (
-                                        <div className="flex items-start gap-2 text-xs text-zinc-600 bg-[#FAF9F6] px-3 py-2 rounded-xl border border-zinc-200/70 max-w-2xl">
-                                            <MessageSquare className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                                            <span className="line-clamp-1">{appt.message}</span>
-                                        </div>
+                                    {appointment.message && (
+                                        <p className="text-xs text-zinc-500 bg-zinc-50 px-3 py-2 rounded-xl border border-zinc-200/70 max-w-2xl">
+                                            <span className="font-semibold text-zinc-700">Note:</span>{" "}
+                                            {appointment.message}
+                                        </p>
                                     )}
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row xl:flex-col items-start sm:items-center xl:items-end justify-between gap-3 pt-3 xl:pt-0 border-t xl:border-t-0 border-zinc-100 shrink-0">
-                                    <div className="flex items-center gap-2">
-                                        {getStatusBadge(appt.status)}
-                                        {getPaymentBadge(appt.paymentStatus)}
-                                    </div>
-
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setSelectedAppointment(appt)}
-                                            className="rounded-xl h-9 px-3 border-zinc-300 cursor-pointer"
-                                        >
-                                            <Eye className="w-4 h-4 mr-1.5" />
-                                            Details
-                                        </Button>
-
-                                        {canConfirm && (
+                                <div className="flex flex-wrap items-center gap-2.5 pt-3 lg:pt-0 border-t lg:border-t-0 border-zinc-100 shrink-0">
+                                    {appointment.status !== "confirmed" &&
+                                        appointment.paymentStatus !== "paid" && (
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                disabled={updatingId === appt._id}
-                                                onClick={() => handleStatusChange(appt._id, "confirmed")}
-                                                className="rounded-xl h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium cursor-pointer"
+                                                disabled={updatingId === appointment._id}
+                                                onClick={() =>
+                                                    handleStatusChange(appointment._id, "confirmed")
+                                                }
+                                                className="rounded-xl h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
                                             >
-                                                {updatingId === appt._id ? (
+                                                {updatingId === appointment._id ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                 ) : (
                                                     <>
@@ -300,150 +254,28 @@ export default function ManageAppointmentsPage() {
                                             </Button>
                                         )}
 
-                                        {canCancel && (
+                                    {appointment.status !== "cancelled" &&
+                                        appointment.paymentStatus !== "paid" && (
                                             <Button
                                                 type="button"
-                                                variant="destructive"
+                                                variant="outline"
                                                 size="sm"
-                                                disabled={updatingId === appt._id}
-                                                onClick={() => handleStatusChange(appt._id, "cancelled")}
-                                                className="rounded-xl h-9 px-3.5 cursor-pointer"
+                                                disabled={updatingId === appointment._id}
+                                                onClick={() =>
+                                                    handleStatusChange(appointment._id, "cancelled")
+                                                }
+                                                className="rounded-xl h-9 px-4 border-rose-200 bg-rose-50/70 text-rose-700 hover:bg-rose-100 cursor-pointer"
                                             >
-                                                {updatingId === appt._id ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <XCircle className="w-4 h-4 mr-1.5" />
-                                                        Cancel
-                                                    </>
-                                                )}
+                                                <XCircle className="w-4 h-4 mr-1.5" />
+                                                Cancel
                                             </Button>
                                         )}
-                                    </div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
             )}
-
-            {/* Appointment Details Modal */}
-            <Dialog
-                open={!!selectedAppointment}
-                onOpenChange={(open) => !open && setSelectedAppointment(null)}
-            >
-                <DialogContent className="sm:max-w-lg rounded-2xl">
-                    {selectedAppointment && (
-                        <>
-                            <DialogHeader>
-                                <DialogTitle className="text-xl font-bold text-zinc-900">
-                                    Appointment Request Details
-                                </DialogTitle>
-                                <DialogDescription>
-                                    Booking ID: #{selectedAppointment._id}
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <div className="space-y-4 pt-2 text-sm">
-                                <div className="p-3.5 rounded-xl bg-[#FAF9F6] border border-zinc-200/80 space-y-1">
-                                    <p className="text-xs font-semibold uppercase text-amber-700">
-                                        Customer Information
-                                    </p>
-                                    <p className="font-bold text-zinc-900">
-                                        {selectedAppointment.customerInfo?.name}
-                                    </p>
-                                    <p className="text-zinc-600">
-                                        {selectedAppointment.customerInfo?.email}
-                                    </p>
-                                    {selectedAppointment.customerInfo?.phone && (
-                                        <p className="text-zinc-600">
-                                            Phone: {selectedAppointment.customerInfo.phone}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="p-3.5 rounded-xl border border-zinc-200/80 space-y-1">
-                                    <p className="text-xs font-semibold uppercase text-amber-700">
-                                        Service Information
-                                    </p>
-                                    <p className="font-bold text-zinc-900">
-                                        {selectedAppointment.serviceInfo?.serviceName} (
-                                        {selectedAppointment.serviceInfo?.category})
-                                    </p>
-                                    <p className="text-zinc-700 font-semibold">
-                                        Price: ${Number(selectedAppointment.servicePrice).toFixed(2)}
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Appointment Date & Time</p>
-                                        <p className="font-semibold text-zinc-900 mt-0.5">
-                                            {selectedAppointment.appointmentDate} at{" "}
-                                            {selectedAppointment.timeSlot}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Booking Request Date</p>
-                                        <p className="font-semibold text-zinc-900 mt-0.5">
-                                            {formatDate(selectedAppointment.createdAt)}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Appointment Status</p>
-                                        <div className="mt-1">
-                                            {getStatusBadge(selectedAppointment.status)}
-                                        </div>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Payment Status</p>
-                                        <div className="mt-1">
-                                            {getPaymentBadge(selectedAppointment.paymentStatus)}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-3.5 rounded-xl border border-zinc-200/80">
-                                    <p className="text-xs text-zinc-400 mb-1">Customer Message</p>
-                                    <p className="text-zinc-700">
-                                        {selectedAppointment.message || "No message provided."}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center justify-end gap-2 pt-2">
-                                    {selectedAppointment.status === "pending" && (
-                                        <Button
-                                            type="button"
-                                            disabled={updatingId === selectedAppointment._id}
-                                            onClick={() =>
-                                                handleStatusChange(selectedAppointment._id, "confirmed")
-                                            }
-                                            className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                                        >
-                                            Confirm Appointment
-                                        </Button>
-                                    )}
-
-                                    {(selectedAppointment.status === "pending" ||
-                                        selectedAppointment.status === "confirmed") && (
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                disabled={updatingId === selectedAppointment._id}
-                                                onClick={() =>
-                                                    handleStatusChange(selectedAppointment._id, "cancelled")
-                                                }
-                                                className="rounded-xl cursor-pointer"
-                                            >
-                                                Cancel Appointment
-                                            </Button>
-                                        )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }

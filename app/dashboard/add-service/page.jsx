@@ -6,42 +6,47 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { apiRequest } from "@/lib/api";
 import { uploadImageToImgBB } from "@/lib/uploadImage";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Upload, Loader2, ImagePlus, Link as LinkIcon } from "lucide-react";
+    Sparkles,
+    ArrowLeft,
+    Upload,
+    Link as LinkIcon,
+    Loader2,
+    PlusCircle,
+    DollarSign,
+    Clock,
+    Tag,
+    ChevronDown,
+    X,
+} from "lucide-react";
 
 const CATEGORIES = [
     "Haircut & Styling",
     "Hair Coloring",
-    "Hair Treatment",
     "Facial & Skincare",
-    "Makeup",
     "Manicure & Pedicure",
     "Spa & Massage",
+    "Bridal & Makeup",
 ];
 
 export default function AddServicePage() {
     const router = useRouter();
+    const [submitting, setSubmitting] = useState(false);
 
     const [serviceName, setServiceName] = useState("");
-    const [category, setCategory] = useState("Haircut & Styling");
-    const [description, setDescription] = useState("");
+    const [category, setCategory] = useState(CATEGORIES[0]);
     const [price, setPrice] = useState("");
-    const [duration, setDuration] = useState("");
-    const [status, setStatus] = useState("active");
-    const [imageFile, setImageFile] = useState(null);
+    const [duration, setDuration] = useState("60");
+    const [description, setDescription] = useState("");
     const [imageUrl, setImageUrl] = useState("");
+    const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState("");
-    const [submitting, setSubmitting] = useState(false);
+    const [isAvailable, setIsAvailable] = useState(true);
 
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
@@ -62,53 +67,67 @@ export default function AddServicePage() {
         }
     };
 
+    const handleClearImage = () => {
+        setImageFile(null);
+        setImageUrl("");
+        setPreviewUrl("");
+    };
+
     const handleCreateService = async (e) => {
         e.preventDefault();
-
-        const numPrice = Number(price);
-        const numDuration = Number(duration);
 
         if (!serviceName.trim()) {
             toast.error("Service name is required.");
             return;
         }
-        if (isNaN(numPrice) || numPrice <= 0) {
-            toast.error("Price must be a positive number.");
+
+        const numericPrice = Number(price);
+        if (!numericPrice || numericPrice <= 0) {
+            toast.error("Please enter a valid price greater than 0.");
             return;
         }
-        if (isNaN(numDuration) || numDuration <= 0) {
-            toast.error("Estimated duration must be a positive number.");
+
+        const numericDuration = Number(duration);
+        if (!numericDuration || numericDuration <= 0) {
+            toast.error("Please enter a valid duration in minutes.");
             return;
         }
-        if (!imageFile && !imageUrl.trim()) {
-            toast.error("Please upload a service image file or enter an image URL.");
+
+        if (!description.trim()) {
+            toast.error("Please provide a description for this treatment.");
             return;
         }
 
         setSubmitting(true);
         try {
-            let finalImageUrl = imageUrl.trim();
+            let finalImage = imageUrl.trim();
             if (imageFile) {
-                finalImageUrl = await uploadImageToImgBB(imageFile);
+                finalImage = await uploadImageToImgBB(imageFile);
             }
 
-            await apiRequest("/api/services", {
+            if (!finalImage) {
+                toast.error("Please upload a service image or paste an image URL.");
+                setSubmitting(false);
+                return;
+            }
+
+            const response = await apiRequest("/api/services", {
                 method: "POST",
                 body: JSON.stringify({
                     serviceName: serviceName.trim(),
                     category,
+                    price: numericPrice,
+                    duration: numericDuration,
                     description: description.trim(),
-                    price: numPrice,
-                    duration: numDuration,
-                    image: finalImageUrl,
-                    status,
+                    image: finalImage,
+                    isAvailable,
                 }),
             });
 
-            toast.success("Salon service added successfully!");
+            toast.success(response.message || "Salon service created successfully!");
             router.push("/dashboard/manage-services");
         } catch (error) {
-            toast.error(error.message || "Failed to add service");
+            toast.error(error.message || "Failed to create salon service");
         } finally {
             setSubmitting(false);
         }
@@ -116,29 +135,38 @@ export default function AddServicePage() {
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            <div>
-                <Link
-                    href="/dashboard/manage-services"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950 transition"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back to Manage Services</span>
-                </Link>
-            </div>
+            {/* Luxury Gradient Header */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#271710] text-white p-6 sm:p-8 rounded-3xl border border-amber-500/20 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+                <div className="absolute left-1/3 -bottom-20 w-64 h-64 rounded-full bg-rose-500/15 blur-3xl pointer-events-none" />
 
-            <div className="bg-white p-6 sm:p-8 rounded-2xl border border-zinc-200/80 shadow-xs">
-                <div className="mb-6">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                        New Treatment
+                <div className="relative space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold uppercase tracking-widest">
+                        <Sparkles className="w-3 h-3" />
+                        Catalog Expansion
                     </span>
-                    <h1 className="text-2xl font-bold text-zinc-900 mt-1">
-                        Add Salon Service
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
+                        Add New <span className="text-gold-gradient">Salon Service</span>
                     </h1>
-                    <p className="text-sm text-zinc-500 mt-0.5">
-                        Publish a new treatment to the TrimBook salon menu.
+                    <p className="text-sm text-zinc-300">
+                        Create a new treatment listing with pricing, duration, and cover photo.
                     </p>
                 </div>
 
+                <Link
+                    href="/dashboard/manage-services"
+                    className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "relative rounded-full px-5 h-10 border-amber-300/40 bg-zinc-900/80 hover:bg-amber-500/20 text-amber-100 hover:text-white backdrop-blur-md w-fit shrink-0"
+                    )}
+                >
+                    <ArrowLeft className="w-4 h-4 mr-1.5" />
+                    Back to Services
+                </Link>
+            </div>
+
+            {/* Single Clean Form Card */}
+            <div className="bg-white/95 backdrop-blur-sm p-6 sm:p-8 rounded-3xl border border-amber-200/70 shadow-xs">
                 <form onSubmit={handleCreateService} className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
@@ -146,72 +174,70 @@ export default function AddServicePage() {
                             <Input
                                 id="serviceName"
                                 type="text"
-                                placeholder="e.g., Signature Keratin Smoothing"
+                                placeholder="e.g., Signature Balayage & Gloss"
                                 value={serviceName}
                                 onChange={(e) => setServiceName(e.target.value)}
                                 required
-                                className="h-11 rounded-xl"
+                                className="h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                             />
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label>Service Category</Label>
-                            <Select value={category} onValueChange={setCategory}>
-                                <SelectTrigger className="h-11 rounded-xl">
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
+                            <Label htmlFor="category">Category</Label>
+                            <div className="relative">
+                                <Tag className="w-4 h-4 text-amber-700 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <select
+                                    id="category"
+                                    value={category}
+                                    onChange={(e) => setCategory(e.target.value)}
+                                    className="w-full h-11 pl-10 pr-10 appearance-none rounded-xl border border-amber-200/80 bg-white text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                >
                                     {CATEGORIES.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>
+                                        <option key={cat} value={cat}>
                                             {cat}
-                                        </SelectItem>
+                                        </option>
                                     ))}
-                                </SelectContent>
-                            </Select>
+                                </select>
+                                <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label htmlFor="price">Price ($ USD)</Label>
-                            <Input
-                                id="price"
-                                type="number"
-                                step="0.01"
-                                min="0.01"
-                                placeholder="45.00"
-                                value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                                required
-                                className="h-11 rounded-xl"
-                            />
+                            <Label htmlFor="price">Price (USD)</Label>
+                            <div className="relative">
+                                <DollarSign className="w-4 h-4 text-amber-700 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <Input
+                                    id="price"
+                                    type="number"
+                                    step="0.01"
+                                    min="1"
+                                    placeholder="85.00"
+                                    value={price}
+                                    onChange={(e) => setPrice(e.target.value)}
+                                    required
+                                    className="pl-10 h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-1.5">
                             <Label htmlFor="duration">Duration (Minutes)</Label>
-                            <Input
-                                id="duration"
-                                type="number"
-                                min="1"
-                                placeholder="60"
-                                value={duration}
-                                onChange={(e) => setDuration(e.target.value)}
-                                required
-                                className="h-11 rounded-xl"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label>Service Status</Label>
-                            <Select value={status} onValueChange={setStatus}>
-                                <SelectTrigger className="h-11 rounded-xl">
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <div className="relative">
+                                <Clock className="w-4 h-4 text-orange-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <Input
+                                    id="duration"
+                                    type="number"
+                                    min="10"
+                                    step="5"
+                                    placeholder="60"
+                                    value={duration}
+                                    onChange={(e) => setDuration(e.target.value)}
+                                    required
+                                    className="pl-10 h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -220,36 +246,42 @@ export default function AddServicePage() {
                         <Textarea
                             id="description"
                             rows={4}
-                            placeholder="Describe what is included in this salon service, products used, and expected results..."
+                            placeholder="Describe the treatment steps, botanical products used, and expected results..."
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             required
-                            className="rounded-xl resize-none"
+                            className="rounded-xl border-amber-200/80 resize-none focus-visible:ring-amber-500/40"
                         />
                     </div>
 
-                    <div className="space-y-3">
-                        <Label>Service Image (Upload Image File or Paste URL)</Label>
-                        <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-300 rounded-2xl p-6 text-center hover:bg-zinc-50 cursor-pointer transition">
-                            {previewUrl ? (
+                    <div className="space-y-3 pt-1">
+                        <Label>Treatment Cover Image (Upload File or Paste URL)</Label>
+
+                        {previewUrl && (
+                            <div className="relative h-48 w-full rounded-2xl overflow-hidden border border-amber-200 bg-zinc-900">
                                 <img
                                     src={previewUrl}
-                                    alt="Service preview"
-                                    className="h-44 w-full max-w-sm object-cover rounded-xl shadow-xs"
+                                    alt="Selected treatment cover"
+                                    className="w-full h-full object-cover"
                                 />
-                            ) : (
-                                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center">
-                                    <ImagePlus className="w-6 h-6" />
-                                </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm font-medium text-zinc-700">
-                                <Upload className="w-4 h-4" />
-                                <span>
-                                    {imageFile
-                                        ? imageFile.name
-                                        : "Click to upload service photo (JPG, PNG, WebP)"}
-                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleClearImage}
+                                    aria-label="Remove selected image"
+                                    className="absolute top-3 right-3 p-1.5 rounded-full bg-zinc-950/75 text-white hover:bg-rose-600 transition cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
+                        )}
+
+                        <label className="flex items-center justify-center gap-2.5 border-2 border-dashed border-amber-300/80 bg-gradient-to-r from-amber-50/50 to-rose-50/40 rounded-2xl p-4 text-sm font-medium text-zinc-700 hover:from-amber-100/50 hover:to-rose-100/40 cursor-pointer transition">
+                            <Upload className="w-4 h-4 text-amber-700" />
+                            <span>
+                                {imageFile
+                                    ? `Selected: ${imageFile.name}`
+                                    : "Click to upload treatment photo (JPG, PNG, WebP)"}
+                            </span>
                             <input
                                 type="file"
                                 accept="image/*"
@@ -258,7 +290,7 @@ export default function AddServicePage() {
                             />
                         </label>
 
-                        <div className="relative flex items-center py-1">
+                        <div className="relative flex items-center py-0.5">
                             <div className="grow border-t border-zinc-200" />
                             <span className="mx-3 text-xs font-medium uppercase text-zinc-400">
                                 Or paste image URL
@@ -273,32 +305,58 @@ export default function AddServicePage() {
                                 placeholder="https://images.unsplash.com/..."
                                 value={imageUrl}
                                 onChange={handleUrlChange}
-                                className="pl-10 h-11 rounded-xl"
+                                className="pl-10 h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                             />
                         </div>
                     </div>
 
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-2xl bg-gradient-to-r from-amber-50/70 to-rose-50/50 border border-amber-200/70">
+                        <div className="space-y-0.5">
+                            <Label
+                                htmlFor="isAvailable"
+                                className="font-bold text-zinc-900 cursor-pointer"
+                            >
+                                Active Status
+                            </Label>
+                            <p className="text-xs text-zinc-500">
+                                Make this service immediately visible and bookable by customers.
+                            </p>
+                        </div>
+                        <input
+                            id="isAvailable"
+                            type="checkbox"
+                            checked={isAvailable}
+                            onChange={(e) => setIsAvailable(e.target.checked)}
+                            className="h-4 w-4 shrink-0 accent-amber-600 rounded cursor-pointer"
+                        />
+                    </div>
+
                     <div className="pt-2 flex items-center justify-end gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => router.push("/dashboard/manage-services")}
-                            className="h-11 rounded-xl"
+                        <Link
+                            href="/dashboard/manage-services"
+                            className={cn(
+                                buttonVariants({ variant: "outline" }),
+                                "h-11 px-6 rounded-full border-amber-200 text-zinc-700 hover:bg-amber-50"
+                            )}
                         >
                             Cancel
-                        </Button>
+                        </Link>
+
                         <Button
                             type="submit"
                             disabled={submitting}
-                            className="h-11 px-7 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-zinc-950 text-white font-semibold transition-colors cursor-pointer"
+                            className="h-11 px-7 rounded-full btn-luxury-gradient text-white font-semibold shadow-md shadow-amber-500/20 border-0 cursor-pointer"
                         >
                             {submitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Saving Service...
+                                    Creating Service...
                                 </>
                             ) : (
-                                "Create Service"
+                                <>
+                                    <PlusCircle className="w-4 h-4 mr-2" />
+                                    Create Service
+                                </>
                             )}
                         </Button>
                     </div>

@@ -2,302 +2,312 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { useSession } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
 import Loader from "@/components/Loader";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import {
-    Search,
-    Eye,
-    Ban,
-    ShieldCheck,
-    Loader2,
     Users,
+    Search,
+    Shield,
+    Ban,
+    CheckCircle2,
+    Loader2,
+    Sparkles,
 } from "lucide-react";
 
 export default function ManageUsersPage() {
-    const [customers, setCustomers] = useState([]);
+    const { data: session } = useSession();
+    const currentUserEmail = session?.user?.email;
+
+    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [togglingId, setTogglingId] = useState(null);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [updatingId, setUpdatingId] = useState(null);
 
     useEffect(() => {
         let isMounted = true;
 
-        async function loadUsers() {
+        async function fetchUsers() {
             try {
-                const data = await apiRequest("/api/users");
-                if (isMounted) setCustomers(data);
+                const data = await apiRequest("/api/users/admin/all");
+                if (isMounted && Array.isArray(data)) {
+                    setUsers(data);
+                }
             } catch (error) {
                 if (isMounted) {
-                    toast.error(error.message || "Failed to load registered customers");
+                    toast.error(error.message || "Failed to load users list");
                 }
             } finally {
                 if (isMounted) setLoading(false);
             }
         }
 
-        loadUsers();
+        fetchUsers();
         return () => {
             isMounted = false;
         };
     }, []);
 
-    const handleToggleBlock = async (customer) => {
-        const nextBlocked = !customer.isBlocked;
-        setTogglingId(customer._id);
-
+    const handleRoleToggle = async (targetUser) => {
+        const nextRole = targetUser.role === "admin" ? "customer" : "admin";
+        setUpdatingId(targetUser._id);
         try {
-            await apiRequest(`/api/users/${customer._id}/block`, {
-                method: "PATCH",
-                body: JSON.stringify({ isBlocked: nextBlocked }),
-            });
-
-            toast.success(
-                nextBlocked
-                    ? `${customer.name} has been blocked.`
-                    : `${customer.name} has been unblocked.`
+            const res = await apiRequest(
+                `/api/users/admin/${targetUser._id}/role`,
+                {
+                    method: "PATCH",
+                    body: JSON.stringify({ role: nextRole }),
+                }
             );
 
-            setCustomers((prev) =>
-                prev.map((item) =>
-                    item._id === customer._id ? { ...item, isBlocked: nextBlocked } : item
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u._id === targetUser._id ? { ...u, role: nextRole } : u
                 )
             );
 
-            if (selectedUser?._id === customer._id) {
-                setSelectedUser((prev) => ({ ...prev, isBlocked: nextBlocked }));
-            }
+            toast.success(
+                res.message || `${targetUser.name}'s role updated to ${nextRole}`
+            );
         } catch (error) {
-            toast.error(error.message || "Failed to update user status");
+            toast.error(error.message || "Failed to update user role");
         } finally {
-            setTogglingId(null);
+            setUpdatingId(null);
         }
     };
 
-    const formatDate = (dateValue) => {
-        if (!dateValue) return "N/A";
-        return new Date(dateValue).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
+    const handleBlockToggle = async (targetUser) => {
+        const nextBlocked = !targetUser.isBlocked;
+        setUpdatingId(targetUser._id);
+        try {
+            const res = await apiRequest(
+                `/api/users/admin/${targetUser._id}/block`,
+                {
+                    method: "PATCH",
+                    body: JSON.stringify({ isBlocked: nextBlocked }),
+                }
+            );
+
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u._id === targetUser._id ? { ...u, isBlocked: nextBlocked } : u
+                )
+            );
+
+            toast.success(
+                res.message ||
+                `${targetUser.name} has been ${nextBlocked ? "blocked" : "unblocked"}`
+            );
+        } catch (error) {
+            toast.error(error.message || "Failed to update user status");
+        } finally {
+            setUpdatingId(null);
+        }
     };
 
-    const filteredCustomers = customers.filter((c) => {
-        const query = searchTerm.trim().toLowerCase();
+    const getInitials = (name) => {
+        if (!name) return "U";
+        return name
+            .split(" ")
+            .map((p) => p[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
+    const filteredUsers = users.filter((u) => {
+        const q = searchTerm.toLowerCase();
         return (
-            !query ||
-            c.name?.toLowerCase().includes(query) ||
-            c.email?.toLowerCase().includes(query)
+            u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
         );
     });
 
     if (loading) {
-        return <Loader text="Loading registered customers..." />;
+        return <Loader text="Loading registered members..." />;
     }
 
     return (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs">
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                    Customer Directory
-                </span>
-                <h1 className="text-2xl font-bold text-zinc-900 mt-1">Manage Users</h1>
-                <p className="text-sm text-zinc-500 mt-0.5">
-                    View registered customers, inspect account details, and block or unblock platform access.
-                </p>
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#271710] text-white p-6 sm:p-8 rounded-3xl border border-amber-500/20 shadow-lg">
+                <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-500/15 blur-3xl pointer-events-none" />
+                <div className="absolute left-1/3 -bottom-20 w-64 h-64 rounded-full bg-rose-500/15 blur-3xl pointer-events-none" />
+
+                <div className="relative space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold uppercase tracking-widest">
+                        <Sparkles className="w-3 h-3" />
+                        Access Control
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
+                        Manage <span className="text-gold-gradient">Users</span>
+                    </h1>
+                    <p className="text-sm text-zinc-300">
+                        Assign admin privileges or restrict account access for platform members.
+                    </p>
+                </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-xs">
-                <div className="relative max-w-md">
+            <div className="bg-white/95 backdrop-blur-sm p-4 sm:p-5 rounded-3xl border border-amber-200/70 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative w-full sm:max-w-md">
                     <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <Input
                         type="text"
-                        placeholder="Search customers by name or email..."
+                        placeholder="Search users by name or email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-10 rounded-xl border-zinc-200"
+                        className="pl-10 h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                     />
                 </div>
+
+                <p className="text-xs font-semibold text-zinc-500">
+                    Total Members:{" "}
+                    <span className="font-extrabold text-zinc-950">
+                        {filteredUsers.length}
+                    </span>
+                </p>
             </div>
 
-            {filteredCustomers.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-zinc-200/80 p-14 text-center space-y-2">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-700 flex items-center justify-center mx-auto">
-                        <Users className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-lg font-bold text-zinc-900">No Customers Found</h2>
-                    <p className="text-sm text-zinc-500">
-                        No registered customer accounts match your search.
-                    </p>
+            {filteredUsers.length === 0 ? (
+                <div className="bg-white/95 backdrop-blur-sm p-12 rounded-3xl border border-amber-200/70 text-center space-y-3 shadow-xs">
+                    <Users className="w-8 h-8 text-amber-600 mx-auto" />
+                    <h2 className="text-lg font-bold text-zinc-900">No Users Found</h2>
                 </div>
             ) : (
-                <div className="bg-white rounded-2xl border border-zinc-200/80 shadow-xs overflow-hidden">
+                <div className="bg-white/95 backdrop-blur-sm rounded-3xl border border-amber-200/70 shadow-xs overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-zinc-200/80 bg-[#FAF9F6] text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                    <th className="py-3.5 px-5">Customer</th>
-                                    <th className="py-3.5 px-5">Joined</th>
-                                    <th className="py-3.5 px-5">Bookings</th>
-                                    <th className="py-3.5 px-5">Status</th>
-                                    <th className="py-3.5 px-5 text-right">Actions</th>
+                                <tr className="bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-rose-50/70 border-b border-amber-200/70 text-[11px] font-bold uppercase tracking-wider text-amber-950">
+                                    <th className="py-4 px-5">Member</th>
+                                    <th className="py-4 px-4">Role</th>
+                                    <th className="py-4 px-4">Status</th>
+                                    <th className="py-4 px-5 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100 text-sm">
-                                {filteredCustomers.map((customer) => (
-                                    <tr key={customer._id} className="hover:bg-zinc-50/70">
-                                        <td className="py-4 px-5">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-9 w-9 border border-zinc-200">
-                                                    <AvatarImage src={customer.image || ""} alt={customer.name} />
-                                                    <AvatarFallback className="bg-zinc-900 text-amber-400 text-xs font-semibold">
-                                                        {(customer.name || "U").slice(0, 2).toUpperCase()}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className="font-semibold text-zinc-900">{customer.name}</p>
-                                                    <p className="text-xs text-zinc-500">{customer.email}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-5 text-zinc-600">
-                                            {formatDate(customer.createdAt)}
-                                        </td>
-                                        <td className="py-4 px-5 font-medium text-zinc-800">
-                                            {customer.appointmentCount ?? 0}
-                                        </td>
-                                        <td className="py-4 px-5">
-                                            {customer.isBlocked ? (
-                                                <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
-                                                    Blocked
-                                                </Badge>
-                                            ) : (
-                                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
-                                                    Active
-                                                </Badge>
-                                            )}
-                                        </td>
-                                        <td className="py-4 px-5">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setSelectedUser(customer)}
-                                                    className="rounded-xl h-8 px-3 border-zinc-300 cursor-pointer"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5 mr-1.5" />
-                                                    Details
-                                                </Button>
+                                {filteredUsers.map((member) => {
+                                    const isSelf = member.email === currentUserEmail;
 
-                                                <Button
-                                                    type="button"
-                                                    variant={customer.isBlocked ? "outline" : "destructive"}
-                                                    size="sm"
-                                                    disabled={togglingId === customer._id}
-                                                    onClick={() => handleToggleBlock(customer)}
-                                                    className="rounded-xl h-8 px-3 cursor-pointer"
-                                                >
-                                                    {togglingId === customer._id ? (
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                    ) : customer.isBlocked ? (
-                                                        <>
-                                                            <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                                                            Unblock
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Ban className="w-3.5 h-3.5 mr-1.5" />
-                                                            Block
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                    return (
+                                        <tr
+                                            key={member._id}
+                                            className="hover:bg-amber-50/30 transition-colors"
+                                        >
+                                            <td className="py-4 px-5">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 ring-1 ring-amber-300/60">
+                                                        <AvatarImage
+                                                            src={member.image || ""}
+                                                            alt={member.name}
+                                                        />
+                                                        <AvatarFallback className="bg-gradient-to-br from-zinc-900 to-amber-950 text-amber-300 text-xs font-bold">
+                                                            {getInitials(member.name)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <p className="font-bold text-zinc-900">
+                                                            {member.name}{" "}
+                                                            {isSelf && (
+                                                                <span className="text-[11px] font-semibold text-amber-700">
+                                                                    (You)
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-xs text-zinc-500">
+                                                            {member.email}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            <td className="py-4 px-4">
+                                                {member.role === "admin" ? (
+                                                    <Badge className="bg-gradient-to-r from-amber-500 to-rose-500 text-white border-0 uppercase text-[10px]">
+                                                        Admin
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-amber-100 text-amber-900 border-amber-200 hover:bg-amber-100 uppercase text-[10px]">
+                                                        Customer
+                                                    </Badge>
+                                                )}
+                                            </td>
+
+                                            <td className="py-4 px-4">
+                                                {member.isBlocked ? (
+                                                    <Badge className="bg-rose-100 text-rose-800 border-rose-200 hover:bg-rose-100">
+                                                        Blocked
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
+                                                        Active
+                                                    </Badge>
+                                                )}
+                                            </td>
+
+                                            <td className="py-4 px-5">
+                                                {isSelf ? (
+                                                    <span className="text-xs text-zinc-400 italic">
+                                                        Current Session
+                                                    </span>
+                                                ) : (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={updatingId === member._id}
+                                                            onClick={() => handleRoleToggle(member)}
+                                                            className="rounded-xl h-8 px-3 border-amber-200 text-amber-900 hover:bg-amber-50 cursor-pointer"
+                                                        >
+                                                            {updatingId === member._id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                            ) : (
+                                                                <>
+                                                                    <Shield className="w-3.5 h-3.5 mr-1.5 text-amber-700" />
+                                                                    {member.role === "admin"
+                                                                        ? "Make Customer"
+                                                                        : "Make Admin"}
+                                                                </>
+                                                            )}
+                                                        </Button>
+
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={updatingId === member._id}
+                                                            onClick={() => handleBlockToggle(member)}
+                                                            className={`rounded-xl h-8 px-3 cursor-pointer ${member.isBlocked
+                                                                    ? "border-emerald-200 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100"
+                                                                    : "border-rose-200 bg-rose-50/70 text-rose-700 hover:bg-rose-100"
+                                                                }`}
+                                                        >
+                                                            {member.isBlocked ? (
+                                                                <>
+                                                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                                                                    Unblock
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Ban className="w-3.5 h-3.5 mr-1.5" />
+                                                                    Block
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </div>
             )}
-
-            {/* User Details Modal */}
-            <Dialog
-                open={!!selectedUser}
-                onOpenChange={(open) => !open && setSelectedUser(null)}
-            >
-                <DialogContent className="sm:max-w-md rounded-2xl">
-                    {selectedUser && (
-                        <>
-                            <DialogHeader>
-                                <DialogTitle>Customer Profile Details</DialogTitle>
-                                <DialogDescription>User ID: #{selectedUser._id}</DialogDescription>
-                            </DialogHeader>
-
-                            <div className="space-y-4 pt-2 text-sm">
-                                <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#FAF9F6] border border-zinc-200/80">
-                                    <Avatar className="h-14 w-14 border border-zinc-200">
-                                        <AvatarImage src={selectedUser.image || ""} alt={selectedUser.name} />
-                                        <AvatarFallback className="bg-zinc-900 text-amber-400 font-bold">
-                                            {(selectedUser.name || "U").slice(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <h4 className="font-bold text-zinc-900 text-base">
-                                            {selectedUser.name}
-                                        </h4>
-                                        <p className="text-zinc-500">{selectedUser.email}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Phone Number</p>
-                                        <p className="font-semibold text-zinc-900 mt-0.5">
-                                            {selectedUser.phone || "Not provided"}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Total Appointments</p>
-                                        <p className="font-semibold text-zinc-900 mt-0.5">
-                                            {selectedUser.appointmentCount ?? 0}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Joined Date</p>
-                                        <p className="font-semibold text-zinc-900 mt-0.5">
-                                            {formatDate(selectedUser.createdAt)}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-xl border border-zinc-200/80">
-                                        <p className="text-xs text-zinc-400">Access Status</p>
-                                        <div className="mt-1">
-                                            {selectedUser.isBlocked ? (
-                                                <Badge className="bg-rose-100 text-rose-800">Blocked</Badge>
-                                            ) : (
-                                                <Badge className="bg-emerald-100 text-emerald-800">Active</Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
