@@ -6,90 +6,124 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { signUp, signIn } from "@/lib/auth-client";
 import { uploadImageToImgBB } from "@/lib/uploadImage";
+import BrandLogo from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Scissors, Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, X } from "lucide-react";
 
 export default function SignUpPage() {
     const router = useRouter();
+
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
     const [imageUrl, setImageUrl] = useState("");
     const [imageFile, setImageFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState("");
     const [loading, setLoading] = useState(false);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
-    const validatePassword = (pwd) => {
-        if (pwd.length < 6) return "Password must be at least 6 characters long.";
-        if (!/[A-Z]/.test(pwd)) return "Password must contain at least one uppercase letter.";
-        if (!/[a-z]/.test(pwd)) return "Password must contain at least one lowercase letter.";
-        return null;
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImageFile(file);
+        setImageUrl("");
+        setPreviewUrl(URL.createObjectURL(file));
+    };
+
+    const handleUrlChange = (e) => {
+        const url = e.target.value;
+        setImageUrl(url);
+        if (url.trim()) {
+            setImageFile(null);
+            setPreviewUrl(url.trim());
+        } else {
+            setPreviewUrl("");
+        }
+    };
+
+    const handleClearImage = () => {
+        setImageFile(null);
+        setImageUrl("");
+        setPreviewUrl("");
     };
 
     const handleSignUp = async (e) => {
         e.preventDefault();
 
-        const passwordError = validatePassword(password);
-        if (passwordError) {
-            toast.error(passwordError);
+        if (!name.trim()) {
+            toast.error("Please enter your full name.");
+            return;
+        }
+
+        if (
+            password.length < 6 ||
+            !/[A-Z]/.test(password) ||
+            !/[a-z]/.test(password)
+        ) {
+            toast.error(
+                "Password must be at least 6 characters with 1 uppercase and 1 lowercase letter."
+            );
             return;
         }
 
         setLoading(true);
         try {
-            let finalImage = imageUrl.trim();
-
+            let finalAvatar = imageUrl.trim();
             if (imageFile) {
-                finalImage = await uploadImageToImgBB(imageFile);
+                finalAvatar = await uploadImageToImgBB(imageFile);
             }
 
             const { error } = await signUp.email({
-                email,
+                name: name.trim(),
+                email: email.trim(),
                 password,
-                name,
-                image: finalImage || undefined,
+                image: finalAvatar || undefined,
             });
 
             if (error) {
-                toast.error(error.message || "Failed to create account");
-                setLoading(false);
+                toast.error(error.message || "Failed to create account.");
                 return;
             }
 
             toast.success("Account created successfully! Welcome to TrimBook.");
-            router.push("/dashboard/my-appointments");
+            router.push("/");
             router.refresh();
         } catch (err) {
-            toast.error(err.message || "Something went wrong during registration");
+            toast.error(err.message || "Something went wrong during registration.");
         } finally {
             setLoading(false);
         }
     };
 
     const handleGoogleSignUp = async () => {
+        setGoogleLoading(true);
         try {
             await signIn.social({
                 provider: "google",
-                callbackURL: "/dashboard",
+                callbackURL: "/",
             });
         } catch (err) {
-            toast.error("Google registration failed");
+            toast.error(err.message || "Google sign-in failed.");
+            setGoogleLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] px-4 py-12">
-            <div className="w-full max-w-md bg-white border border-zinc-200/80 rounded-2xl shadow-sm p-8">
-                <div className="flex flex-col items-center text-center mb-8">
-                    <Link href="/" className="flex items-center gap-2 text-2xl font-bold tracking-tight text-zinc-900">
-                        <span className="p-2 rounded-xl bg-zinc-900 text-amber-400">
-                            <Scissors className="w-5 h-5" />
-                        </span>
-                        TrimBook
-                    </Link>
-                    <h1 className="mt-4 text-2xl font-semibold text-zinc-900">Create your account</h1>
-                    <p className="mt-1 text-sm text-zinc-500">Book your next salon & spa experience in seconds</p>
+        <div className="min-h-[calc(100vh-4rem)] bg-luxury-mesh flex items-center justify-center px-4 py-12">
+            <div className="w-full max-w-md bg-white/95 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-amber-200/80 shadow-xl shadow-amber-500/10 space-y-6">
+                <div className="text-center space-y-2">
+                    <div className="flex justify-center">
+                        <BrandLogo />
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 pt-1">
+                        Create your account
+                    </h1>
+                    <p className="text-xs sm:text-sm text-zinc-500">
+                        Book your next salon &amp; spa experience in seconds
+                    </p>
                 </div>
 
                 <form onSubmit={handleSignUp} className="space-y-4">
@@ -102,6 +136,7 @@ export default function SignUpPage() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
+                            className="h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                         />
                     </div>
 
@@ -114,6 +149,7 @@ export default function SignUpPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
+                            className="h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                         />
                     </div>
 
@@ -126,49 +162,62 @@ export default function SignUpPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            className="h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                         />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <Label htmlFor="photoFile">Profile Image (Upload Image or Paste URL)</Label>
-                        <div className="flex items-center gap-2">
-                            <label className="flex-1 flex items-center justify-center gap-2 border border-dashed border-zinc-300 rounded-lg py-2 px-3 text-sm text-zinc-600 hover:bg-zinc-50 cursor-pointer transition">
-                                <Upload className="w-4 h-4 text-zinc-500" />
-                                <span className="truncate">{imageFile ? imageFile.name : "Upload Image"}</span>
-                                <input
-                                    id="photoFile"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                                />
-                            </label>
-                            {imageFile && (
-                                <Button
+                    <div className="space-y-2.5 pt-1">
+                        <Label>Profile Image (Upload Image or Paste URL)</Label>
+
+                        {previewUrl && (
+                            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={previewUrl}
+                                        alt="Profile preview"
+                                        className="w-11 h-11 rounded-full object-cover ring-2 ring-amber-400/50"
+                                    />
+                                    <span className="text-xs font-medium text-zinc-700 truncate max-w-[180px]">
+                                        {imageFile ? imageFile.name : "Custom photo selected"}
+                                    </span>
+                                </div>
+                                <button
                                     type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setImageFile(null)}
-                                    className="text-xs text-rose-600"
+                                    onClick={handleClearImage}
+                                    aria-label="Remove image"
+                                    className="p-1.5 rounded-full text-zinc-500 hover:bg-rose-100 hover:text-rose-700 transition cursor-pointer"
                                 >
-                                    Clear
-                                </Button>
-                            )}
-                        </div>
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        <label className="flex items-center justify-center gap-2 border-2 border-dashed border-amber-300/80 bg-gradient-to-r from-amber-50/50 to-rose-50/40 rounded-2xl p-3 text-sm font-medium text-zinc-700 hover:from-amber-100/50 hover:to-rose-100/40 cursor-pointer transition">
+                            <Upload className="w-4 h-4 text-amber-700" />
+                            <span>
+                                {imageFile ? `Selected: ${imageFile.name}` : "Upload Image"}
+                            </span>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="hidden"
+                            />
+                        </label>
+
                         <Input
                             type="url"
                             placeholder="Or paste profile image URL (optional)"
                             value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            disabled={!!imageFile}
-                            className="mt-2"
+                            onChange={handleUrlChange}
+                            className="h-11 rounded-xl border-amber-200/80 focus-visible:ring-amber-500/40"
                         />
                     </div>
 
                     <Button
                         type="submit"
-                        disabled={loading}
-                        className="w-full bg-zinc-900 hover:bg-zinc-800 text-white h-11 rounded-xl font-medium cursor-pointer"
+                        disabled={loading || googleLoading}
+                        className="w-full h-11 rounded-full btn-luxury-gradient text-white font-semibold shadow-md shadow-amber-500/20 border-0 cursor-pointer mt-2"
                     >
                         {loading ? (
                             <>
@@ -181,45 +230,52 @@ export default function SignUpPage() {
                     </Button>
                 </form>
 
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-zinc-200" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-3 text-zinc-400">Or continue with</span>
-                    </div>
+                <div className="relative flex items-center">
+                    <div className="grow border-t border-amber-200/70" />
+                    <span className="mx-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                        OR CONTINUE WITH
+                    </span>
+                    <div className="grow border-t border-amber-200/70" />
                 </div>
 
                 <Button
                     type="button"
                     variant="outline"
+                    disabled={loading || googleLoading}
                     onClick={handleGoogleSignUp}
-                    className="w-full h-11 rounded-xl border-zinc-300 hover:bg-zinc-50 font-medium cursor-pointer"
+                    className="w-full h-11 rounded-full border-amber-200/90 bg-white hover:bg-amber-50/70 text-zinc-900 font-semibold shadow-xs cursor-pointer"
                 >
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
-                        <path
-                            fill="currentColor"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        />
-                        <path
-                            fill="currentColor"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        />
-                        <path
-                            fill="currentColor"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                        />
-                        <path
-                            fill="currentColor"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                        />
-                    </svg>
-                    Continue with Google
+                    {googleLoading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin text-amber-700" />
+                    ) : (
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                            <path
+                                fill="#4285F4"
+                                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+                            />
+                            <path
+                                fill="#34A853"
+                                d="M12 24c3.3 0 6.08-1.09 8.11-2.96l-3.88-3.05c-1.1.74-2.51 1.18-4.23 1.18-3.26 0-6.02-2.2-7-5.16H1.01v3.14C3.05 21.2 7.24 24 12 24Z"
+                            />
+                            <path
+                                fill="#FBBC05"
+                                d="M5 14.01c-.25-.74-.39-1.54-.39-2.36 0-.82.14-1.62.39-2.36V6.15H1.01C.37 7.43 0 8.87 0 10.39s.37 2.96 1.01 4.24l3.99-3.12Z"
+                            />
+                            <path
+                                fill="#EA4335"
+                                d="M12 4.75c1.79 0 3.41.62 4.68 1.82l3.51-3.51C18.07 1.19 15.3 0 12 0 7.24 0 3.05 2.8 1.01 6.85l3.99 3.14c.98-2.96 3.74-5.24 7-5.24Z"
+                            />
+                        </svg>
+                    )}
+                    <span>Continue with Google</span>
                 </Button>
 
-                <p className="mt-6 text-center text-sm text-zinc-600">
+                <p className="text-center text-xs sm:text-sm text-zinc-600">
                     Already have an account?{" "}
-                    <Link href="/sign-in" className="font-semibold text-zinc-900 hover:underline">
+                    <Link
+                        href="/sign-in"
+                        className="font-bold text-amber-800 hover:text-rose-600 transition-colors"
+                    >
                         Sign in
                     </Link>
                 </p>
