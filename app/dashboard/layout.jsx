@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useSession, authClient } from "@/lib/auth-client";
 import Sidebar from "@/components/Sidebar";
 import Loader from "@/components/Loader";
 
@@ -24,17 +24,44 @@ export default function DashboardLayout({ children }) {
     const pathname = usePathname();
     const router = useRouter();
     const { data: session, isPending } = useSession();
+    const [verifiedUser, setVerifiedUser] = useState(null);
+    const [checkingFallback, setCheckingFallback] = useState(false);
 
-    const user = session?.user;
+    const user = session?.user || verifiedUser;
     const isAdmin = user?.role === "admin";
 
     useEffect(() => {
-        if (isPending) return;
+        if (isPending || session?.user) return;
 
-        if (!user) {
-            router.replace("/sign-in");
-            return;
-        }
+        let isMounted = true;
+        Promise.resolve().then(() => {
+            if (isMounted) setCheckingFallback(true);
+        });
+
+        authClient
+            .getSession({ query: { disableCookieCache: true } })
+            .then(({ data }) => {
+                if (!isMounted) return;
+                if (data?.user) {
+                    setVerifiedUser(data.user);
+                } else {
+                    router.replace("/sign-in");
+                }
+            })
+            .catch(() => {
+                if (isMounted) router.replace("/sign-in");
+            })
+            .finally(() => {
+                if (isMounted) setCheckingFallback(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isPending, session, router]);
+
+    useEffect(() => {
+        if (!user) return;
 
         if (user.isBlocked) {
             router.replace("/sign-in");
@@ -49,9 +76,9 @@ export default function DashboardLayout({ children }) {
         if (isAdmin && CUSTOMER_ONLY_ROUTES.some((route) => pathname?.startsWith(route))) {
             router.replace("/dashboard");
         }
-    }, [isPending, user, isAdmin, pathname, router]);
+    }, [user, isAdmin, pathname, router]);
 
-    if (isPending || !user) {
+    if (isPending || checkingFallback || !user) {
         return (
             <div className="min-h-screen bg-luxury-mesh flex items-center justify-center">
                 <Loader text="Loading workspace..." />
