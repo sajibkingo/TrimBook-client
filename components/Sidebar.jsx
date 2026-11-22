@@ -56,15 +56,15 @@ function SidebarContent({
             </div>
 
             <div className="p-4">
-                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900/80 to-amber-950/30 border border-amber-500/20 flex items-center gap-3 shadow-xs">
-                    <Avatar className="h-10 w-10 ring-2 ring-amber-400/40">
+                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-zinc-900/95 via-zinc-900/80 to-amber-950/30 border border-amber-500/20 flex items-center gap-3.5 shadow-xs">
+                    <Avatar className="h-10 w-10 ring-2 ring-amber-400/40 shrink-0">
                         <AvatarImage src={user?.image || ""} alt={user?.name} />
                         <AvatarFallback className="bg-gradient-to-br from-zinc-800 to-amber-950 text-amber-300 text-xs font-bold">
                             {getInitials(user?.name)}
                         </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white truncate">
+                    <div className="min-w-0 flex flex-col items-center text-center">
+                        <p className="text-sm font-semibold text-white truncate max-w-[130px]">
                             {user?.name || "Member"}
                         </p>
                         <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-400/25 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
@@ -85,8 +85,8 @@ function SidebarContent({
                             href={item.href}
                             onClick={onNavigate}
                             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
-                                    ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold shadow-md shadow-amber-500/20"
-                                    : "text-zinc-400 hover:text-white hover:bg-white/5"
+                                ? "bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white font-semibold shadow-md shadow-amber-500/20"
+                                : "text-zinc-400 hover:text-white hover:bg-white/5"
                                 }`}
                         >
                             <Icon

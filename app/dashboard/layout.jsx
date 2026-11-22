@@ -53,14 +53,14 @@ export default function DashboardLayout({ children }) {
 
     if (isPending || !user) {
         return (
-            <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
+            <div className="min-h-screen bg-luxury-mesh flex items-center justify-center">
                 <Loader text="Loading workspace..." />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FAF9F6]">
+        <div className="min-h-screen bg-luxury-mesh">
             <Sidebar />
             <div className="lg:pl-64">
                 <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">{children}</main>
