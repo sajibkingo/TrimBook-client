@@ -25,18 +25,24 @@ export default function DashboardLayout({ children }) {
     const router = useRouter();
     const { data: session, isPending } = useSession();
     const [verifiedUser, setVerifiedUser] = useState(null);
-    const [checkingFallback, setCheckingFallback] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(true);
 
     const user = session?.user || verifiedUser;
     const isAdmin = user?.role === "admin";
 
     useEffect(() => {
-        if (isPending || session?.user) return;
+        if (isPending) return;
 
         let isMounted = true;
-        Promise.resolve().then(() => {
-            if (isMounted) setCheckingFallback(true);
-        });
+
+        if (session?.user) {
+            Promise.resolve().then(() => {
+                if (isMounted) setIsVerifying(false);
+            });
+            return () => {
+                isMounted = false;
+            };
+        }
 
         authClient
             .getSession({ query: { disableCookieCache: true } })
@@ -44,15 +50,13 @@ export default function DashboardLayout({ children }) {
                 if (!isMounted) return;
                 if (data?.user) {
                     setVerifiedUser(data.user);
+                    setIsVerifying(false);
                 } else {
                     router.replace("/sign-in");
                 }
             })
             .catch(() => {
                 if (isMounted) router.replace("/sign-in");
-            })
-            .finally(() => {
-                if (isMounted) setCheckingFallback(false);
             });
 
         return () => {
@@ -78,7 +82,7 @@ export default function DashboardLayout({ children }) {
         }
     }, [user, isAdmin, pathname, router]);
 
-    if (isPending || checkingFallback || !user) {
+    if (isPending || (isVerifying && !user) || !user) {
         return (
             <div className="min-h-screen bg-luxury-mesh flex items-center justify-center">
                 <Loader text="Loading workspace..." />
